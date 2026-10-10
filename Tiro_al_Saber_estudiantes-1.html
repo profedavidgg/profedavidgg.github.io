@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tiro al Saber</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Silkscreen:wght@400;700&display=swap">
+<style>
+/* Layout: una sola pantalla de arcade al atardecer — pregunta arriba, campo de tiro al centro, marcador abajo */
+:root{
+  --night:#1a1430; --panel:#271f43; --edge:#3a2f5e; --shade:#120d24;
+  --ink:#fff3dd; --muted:#b8a8d8; --sun:#ffb347;
+  --ok:#5ee38a; --okbg:#1c4632; --bad:#ff5a5a; --badbg:#4b1c27;
+  --oa:#ff7a3d; --ob:#34c6d1; --oc:#ffd23f; --od:#b07cff;
+  --veil:rgba(18,13,36,.88);
+  --f-px:'Silkscreen','Courier New',monospace;
+  --f-txt:'Atkinson Hyperlegible','Segoe UI',system-ui,sans-serif;
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+html{box-sizing:border-box;height:100%;background:var(--night)}
+*,*::before,*::after{box-sizing:inherit}
+body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--f-txt);overflow:hidden}
+#app:fullscreen{max-width:none;background:var(--night)}
+#app{height:100%;display:flex;flex-direction:column;gap:8px;padding-block:8px;padding-inline:16px;max-width:1700px;margin:0 auto;position:relative;user-select:none;-webkit-user-select:none}
+input,textarea,select{user-select:text;-webkit-user-select:text}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.brand{font-family:var(--f-px);font-weight:700;font-size:18px;color:var(--sun);letter-spacing:.06em}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+
+.btn{font-family:var(--f-px);font-size:15px;background:var(--edge);color:var(--ink);border:0;padding:10px 16px;cursor:pointer;box-shadow:0 4px 0 var(--shade);letter-spacing:.04em}
+.btn:hover{filter:brightness(1.15)}
+.btn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--shade)}
+.btn.primary{background:var(--sun);color:var(--night);font-weight:700}
+.btn.sm{font-size:11px;padding:6px 10px;box-shadow:0 3px 0 var(--shade)}
+.btn:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-visible{outline:3px solid var(--oc);outline-offset:2px}
+
+.px{background:var(--panel);margin:4px;padding:12px 16px;
+  box-shadow:0 -4px 0 var(--sun),0 4px 0 var(--sun),-4px 0 0 var(--sun),4px 0 0 var(--sun),inset 0 0 0 3px var(--night),inset 0 0 0 5px var(--edge)}
+
+#panel{flex:0 0 auto;max-height:48%;overflow:auto}
+.qhead{display:flex;justify-content:space-between;gap:12px;font-family:var(--f-px);font-size:12px;color:var(--muted);letter-spacing:.06em;flex-wrap:wrap}
+#qtext{font-size:clamp(17px,1.25vw + 11px,36px);font-weight:700;line-height:1.25;margin:6px 0 12px;text-wrap:balance}
+#opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.opt{display:flex;align-items:center;gap:10px;background:var(--night);padding:8px 10px;font-size:clamp(15px,1vw + 10px,30px);min-width:0;transition:opacity .2s}
+.opt .txt{min-width:0;overflow-wrap:anywhere}
+.let{flex:0 0 auto;width:1.7em;height:1.7em;display:grid;place-items:center;font-family:var(--f-px);font-weight:700;color:var(--night)}
+.opt[data-i="0"] .let{background:var(--oa)} .opt[data-i="1"] .let{background:var(--ob)}
+.opt[data-i="2"] .let{background:var(--oc)} .opt[data-i="3"] .let{background:var(--od)}
+.opt.ok{background:var(--okbg);outline:3px solid var(--ok)}
+.opt.bad{background:var(--badbg);outline:3px solid var(--bad)}
+.opt.bad .txt{text-decoration:line-through}
+.opt.dim{opacity:.4}
+#panel.veil .qbody{filter:blur(12px);opacity:.5}
+.fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;font-size:.78em;line-height:1.05;margin:0 .08em}
+.fr>span:first-child{border-bottom:2px solid currentColor;padding:0 .15em}
+
+#stage{flex:1 1 auto;min-height:170px;position:relative;overflow:hidden;background:var(--night)}
+#cv{display:block;image-rendering:pixelated;image-rendering:crisp-edges;cursor:none;touch-action:none}
+#toast{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:var(--shade);color:var(--oc);font-family:var(--f-px);font-size:13px;padding:8px 12px;box-shadow:0 0 0 2px var(--oc);max-width:90%;text-align:center;pointer-events:none}
+
+#hud{display:flex;flex-wrap:wrap;align-items:center;gap:6px 22px;font-family:var(--f-px);font-size:11px;color:var(--muted);letter-spacing:.05em;padding:2px 4px}
+.hi{display:flex;align-items:center;gap:8px}
+.hv{font-size:20px;color:var(--ink);font-variant-numeric:tabular-nums}
+.icons{display:flex;gap:4px}
+.life{width:14px;height:14px;background:var(--night);box-shadow:inset 0 0 0 3px var(--oa),inset 0 0 0 5px var(--night),inset 0 0 0 7px var(--oa)}
+.shell{width:8px;height:18px;background:linear-gradient(var(--bad) 64%,var(--oc) 64%)}
+.off{opacity:.18}
+.timer{flex:1 1 180px;min-width:150px}
+.bar{flex:1;height:14px;background:var(--edge)}
+.bar>i{display:block;height:100%;width:100%;background:var(--sun)}
+.bar.low>i{background:var(--bad)}
+
+.ov{position:absolute;inset:0;z-index:10;background:var(--veil);display:flex;overflow:auto;padding:24px 16px}
+.card{width:min(760px,100%);margin:auto;padding:22px 24px}
+.card h1{font-family:var(--f-px);font-weight:700;color:var(--sun);font-size:clamp(30px,5vw,54px);line-height:1;margin:0 0 8px;letter-spacing:.04em;text-wrap:balance}
+.card h2{font-family:var(--f-px);color:var(--sun);font-size:20px;margin:0 0 12px;text-wrap:balance}
+.card h3{font-family:var(--f-px);font-size:14px;color:var(--oc);margin:18px 0 6px;letter-spacing:.05em}
+.card p,.card li{line-height:1.5;font-size:16px;max-width:65ch}
+.card ul{padding-left:20px;margin:6px 0}
+.lead{color:var(--muted);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-family:var(--f-px);font-size:11px;color:var(--muted);letter-spacing:.06em}
+input,select,textarea{font-family:var(--f-txt);font-size:16px;background:var(--night);color:var(--ink);border:2px solid var(--edge);padding:9px 10px;border-radius:0;width:100%}
+textarea{min-height:240px;font-size:14px;line-height:1.5;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px;align-items:center}
+.note{font-size:14px;color:var(--muted)}
+.err{color:var(--bad);font-size:14px}
+.good{color:var(--ok);font-size:15px}
+.big{font-family:var(--f-px);font-size:clamp(36px,7vw,64px);color:var(--ink);font-variant-numeric:tabular-nums;line-height:1}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin:16px 0}
+.stat{background:var(--night);padding:10px 12px}
+.stat b{display:block;font-family:var(--f-px);font-size:22px;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted)}
+.stat.warn b{color:var(--bad)}
+.nojs{background:var(--badbg);color:var(--ink);padding:14px 16px;margin:0 0 18px;box-shadow:inset 0 0 0 3px var(--bad)}
+.nojs b{color:var(--oc);font-family:var(--f-px);font-size:15px;letter-spacing:.04em}
+.nojs ol{margin:8px 0 0;padding-left:22px}
+.nojs li{font-size:15px;line-height:1.45}
+.grade{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 18px}
+.lvl{font-family:var(--f-px);font-size:16px;padding:6px 10px;background:var(--night)}
+.lvl.sup{color:var(--ok)} .lvl.alt{color:var(--ob)} .lvl.bas{color:var(--oc)} .lvl.baj{color:var(--bad)}
+.code{font-family:var(--f-px);font-size:clamp(20px,4vw,30px);background:var(--night);color:var(--oc);padding:10px 14px;display:inline-block;letter-spacing:.08em;user-select:text;-webkit-user-select:text}
+.rep{list-style:none;padding:0;margin:8px 0 0;display:flex;flex-direction:column;gap:6px}
+.rep li{display:grid;grid-template-columns:2.2em minmax(0,1fr) auto;gap:10px;align-items:center;background:var(--night);padding:8px 10px;font-size:15px}
+.rep .n{font-family:var(--f-px);color:var(--muted)}
+.tag{font-family:var(--f-px);font-size:11px;padding:4px 7px;white-space:nowrap}
+.tag.ok{background:var(--okbg);color:var(--ok)} .tag.mal{background:var(--badbg);color:var(--bad)}
+.tag.tiempo{background:var(--edge);color:var(--oc)} .tag.anulada{background:var(--badbg);color:var(--oc)}
+kbd{font-family:var(--f-px);background:var(--edge);padding:1px 6px;font-size:12px}
+
+@media (max-width:560px){
+  .brand{font-size:14px}
+  #opts{gap:6px}
+  .opt{padding:6px 8px;gap:8px}
+  #hud{gap:6px 14px}
+  .hv{font-size:17px}
+  .card{padding:18px 16px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand">TIRO AL SABER</div>
+    <div class="tools">
+      <button class="btn sm" id="btnPause" type="button">Pausa</button>
+      <button class="btn sm" id="btnSound" type="button">Sonido: sí</button>
+      <button class="btn sm" id="btnFull" type="button">Pantalla completa</button>
+    </div>
+  </header>
+
+  <section id="panel" class="px veil" aria-live="polite">
+    <div class="qhead"><span id="qnum">PREGUNTA –</span><span id="qbank">ELIGE UN BANCO PARA EMPEZAR</span></div>
+    <div class="qbody">
+      <p id="qtext">Aquí aparece la pregunta. Los platillos salen con la letra de cada opción.</p>
+      <div id="opts">
+        <div class="opt" data-i="0"><b class="let">A</b><span class="txt">Opción A</span></div>
+        <div class="opt" data-i="1"><b class="let">B</b><span class="txt">Opción B</span></div>
+        <div class="opt" data-i="2"><b class="let">C</b><span class="txt">Opción C</span></div>
+        <div class="opt" data-i="3"><b class="let">D</b><span class="txt">Opción D</span></div>
+      </div>
+    </div>
+  </section>
+
+  <main id="stage"><canvas id="cv" aria-label="Campo de tiro: dispara al platillo con la letra correcta"></canvas><div id="toast" hidden></div></main>
+
+  <footer id="hud">
+    <div class="hi">PUNTOS <span class="hv" id="hScore">0</span></div>
+    <div class="hi">RACHA <span class="hv" id="hStreak">0</span><span id="hMult"></span></div>
+    <div class="hi">VIDAS <span class="icons" id="hLives"></span></div>
+    <div class="hi">CARTUCHOS <span class="icons" id="hAmmo"></span></div>
+    <div class="hi timer">TIEMPO <div class="bar" id="hBar"><i id="hFill"></i></div><span class="hv" id="hTime">–</span></div>
+  </footer>
+
+  <!-- INICIO -->
+  <div class="ov" id="ovStart">
+    <div class="card px">
+      <h1>TIRO AL SABER</h1>
+      <div class="nojs" id="nojs">
+        <b>ESTE VISOR NO PUEDE EJECUTAR EL JUEGO</b>
+        <p style="margin:6px 0 0">Si los botones no responden, abre el archivo con Google Chrome:</p>
+        <ol>
+          <li>En WhatsApp o Drive toca <b>⋮</b> › <b>Abrir con</b> › <b>Chrome</b>.</li>
+          <li>Si Chrome no aparece, descarga el archivo. Luego abre Chrome › <b>⋮</b> › <b>Descargas</b> y tócalo ahí.</li>
+        </ol>
+      </div>
+      <p class="lead">Lee la pregunta y dispara al platillo que tiene la letra de la respuesta correcta. Solo vale un disparo certero por pregunta.</p>
+      <div class="grid">
+        <div class="field"><label for="fName">JUGADOR O EQUIPO</label><input id="fName" maxlength="40" placeholder="Ej.: Equipo 3 · 8°B" autocomplete="off"></div>
+        <div class="field"><label for="fBank">BANCO DE PREGUNTAS</label><select id="fBank"></select></div>
+        <div class="field"><label for="fNq">PREGUNTAS POR PARTIDA</label>
+          <select id="fNq"><option value="5">5</option><option value="10" selected>10</option><option value="15">15</option><option value="20">20</option><option value="all">Todas</option></select></div>
+        <div class="field"><label for="fSecs">TIEMPO POR PREGUNTA</label>
+          <select id="fSecs"><option value="15">15 segundos</option><option value="20" selected>20 segundos</option><option value="30">30 segundos</option><option value="45">45 segundos</option></select></div>
+      </div>
+      <p class="err" id="startErr" hidden></p>
+      <div class="row">
+        <button class="btn primary" id="btnPlay" type="button">JUGAR</button>
+        <button class="btn" id="btnHelp" type="button">Cómo se juega</button>
+        <button class="btn" id="btnEdit" type="button">Editar preguntas</button>
+        <button class="btn" id="btnVerify" type="button">Verificar código</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AYUDA -->
+  <div class="ov" id="ovHelp" hidden>
+    <div class="card px">
+      <h2>CÓMO SE JUEGA</h2>
+      <h3>RONDA</h3>
+      <ul>
+        <li>Primero tienes unos segundos para <b>leer</b>. En ese momento el gatillo está bloqueado.</li>
+        <li>Luego salen <b>4 platillos</b>, uno por letra (A, B, C, D). Haz clic o toca el de la respuesta correcta.</li>
+        <li>Cada tanda trae <b>2 cartuchos</b>. Si fallas al aire o se te acaban, espera la siguiente tanda, pero el reloj sigue corriendo.</li>
+      </ul>
+      <h3>PUNTOS</h3>
+      <ul>
+        <li>Acierto: 100 puntos más un bono por el tiempo que sobró.</li>
+        <li>Racha de 3 aciertos seguidos: puntos ×2. Racha de 6: ×3.</li>
+      </ul>
+      <h3>NOTA DE 1,0 A 5,0</h3>
+      <ul>
+        <li>Nota = 1 + 4 × (aciertos ÷ preguntas de la partida). Las preguntas que no alcanzaste a jugar cuentan como no acertadas.</li>
+        <li>Cada incidencia (salir del juego, ráfaga o clic automático) resta 0,3. La nota mínima es 1,0.</li>
+        <li>Desempeño: Superior 4,6–5,0 · Alto 4,0–4,5 · Básico 3,0–3,9 · Bajo 1,0–2,9.</li>
+      </ul>
+      <h3>SI NO LE DAS A LA CORRECTA</h3>
+      <ul>
+        <li><b>Platillo equivocado:</b> pierdes 1 vida, se rompe la racha y la pregunta termina. El juego muestra cuál era la correcta.</li>
+        <li><b>Se acaba el tiempo:</b> también pierdes 1 vida. Quedarse quieto no salva.</li>
+        <li>Con 3 vidas perdidas termina la partida.</li>
+      </ul>
+      <h3>ANTIFRAUDE</h3>
+      <ul>
+        <li>Las opciones cambian de letra y los platillos cambian de trayectoria en cada pregunta: no sirve memorizar posiciones.</li>
+        <li>Disparar durante la lectura no cuenta. Disparar en ráfaga traba el gatillo 1,5 s.</li>
+        <li>Salir del juego (otra pestaña, calculadora, buscador) durante una pregunta la <b>anula</b> y cuesta 1 vida.</li>
+        <li>Se bloquean copiar el texto y el clic derecho. Los clics generados por programas no cuentan.</li>
+        <li>El reporte final trae un <b>código de verificación</b>. El docente lo comprueba en “Verificar código”; si alguien edita el puntaje, el código deja de coincidir.</li>
+      </ul>
+      <p class="note">Teclas: <kbd>P</kbd> pausa (oculta la pregunta y queda en el reporte) · <kbd>M</kbd> sonido.</p>
+      <div class="row"><button class="btn primary" data-back type="button">VOLVER</button></div>
+    </div>
+  </div>
+
+  <!-- EDITOR -->
+  <div class="ov" id="ovEdit" hidden>
+    <div class="card px">
+      <h2>EDITAR PREGUNTAS</h2>
+      <p class="note">Una pregunta por línea: <b>pregunta | correcta | distractor | distractor | distractor</b>. Escribe la correcta siempre de segunda; el juego la baraja. Fracciones con barra (3/4) y potencias con ^ (x^2). Las líneas que empiezan con # se ignoran.</p>
+      <div class="field"><label for="fCustom">BANCO PERSONALIZADO</label><textarea id="fCustom" spellcheck="false"></textarea></div>
+      <p id="editMsg" class="note"></p>
+      <div class="row">
+        <button class="btn sm" id="btnLoad7" type="button">Copiar ejemplo 7°</button>
+        <button class="btn sm" id="btnLoad8" type="button">Copiar ejemplo 8°</button>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="btnSaveBank" type="button">GUARDAR</button>
+        <button class="btn" data-back type="button">Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CÓDIGO DOCENTE -->
+  <div class="ov" id="ovPin" hidden>
+    <div class="card px" style="width:min(440px,100%)">
+      <h2>ACCESO DOCENTE</h2>
+      <p class="note">Escribe el código del docente para continuar.</p>
+      <div class="field"><label for="fPin">CÓDIGO</label><input id="fPin" type="password" inputmode="numeric" maxlength="8" autocomplete="off"></div>
+      <p class="err" id="pinMsg"></p>
+      <div class="row">
+        <button class="btn primary" id="btnPinOk" type="button">ENTRAR</button>
+        <button class="btn" data-back type="button">Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERIFICAR -->
+  <div class="ov" id="ovVerify" hidden>
+    <div class="card px">
+      <h2>VERIFICAR CÓDIGO</h2>
+      <p class="note">Copia los datos tal como aparecen en el reporte del estudiante: nombre, puntos, aciertos, nota, incidencias y código.</p>
+      <div class="grid">
+        <div class="field"><label for="vName">JUGADOR O EQUIPO</label><input id="vName" autocomplete="off"></div>
+        <div class="field"><label for="vScore">PUNTOS</label><input id="vScore" inputmode="numeric" autocomplete="off"></div>
+        <div class="field"><label for="vOk">ACIERTOS</label><input id="vOk" inputmode="numeric" autocomplete="off"></div>
+        <div class="field"><label for="vNota">NOTA</label><input id="vNota" inputmode="decimal" autocomplete="off" placeholder="Ej.: 3,8"></div>
+        <div class="field"><label for="vInc">INCIDENCIAS</label><input id="vInc" inputmode="numeric" autocomplete="off"></div>
+        <div class="field"><label for="vCode">CÓDIGO</label><input id="vCode" autocomplete="off" placeholder="XXXX-XXXXXX"></div>
+      </div>
+      <p id="vMsg" class="note"></p>
+      <div class="row">
+        <button class="btn primary" id="btnCheck" type="button">COMPROBAR</button>
+        <button class="btn" data-back type="button">Volver</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAUSA -->
+  <div class="ov" id="ovPause" hidden>
+    <div class="card px" style="text-align:center">
+      <h2>PAUSA</h2>
+      <p class="note" style="margin-inline:auto">La pregunta queda oculta. Esta pausa aparece en el reporte final.</p>
+      <div class="row" style="justify-content:center"><button class="btn primary" id="btnResume" type="button">CONTINUAR</button><button class="btn" id="btnQuit" type="button">Terminar partida</button></div>
+    </div>
+  </div>
+
+  <!-- SALIDA DEL JUEGO -->
+  <div class="ov" id="ovLeft" hidden>
+    <div class="card px" style="text-align:center">
+      <h2>PREGUNTA ANULADA</h2>
+      <p style="margin-inline:auto">Saliste del juego mientras había una pregunta en pantalla. La pregunta se anuló y perdiste 1 vida. Queda registrado como incidencia.</p>
+      <div class="row" style="justify-content:center"><button class="btn primary" id="btnLeftOk" type="button">CONTINUAR</button></div>
+    </div>
+  </div>
+
+  <!-- FIN -->
+  <div class="ov" id="ovEnd" hidden>
+    <div class="card px">
+      <h2 id="endTitle">FIN DE LA PARTIDA</h2>
+      <p class="note" id="endWho"></p>
+      <div class="grade"><div class="big" id="endScore">0</div><span class="lvl" id="endLvl"></span></div>
+      <p class="note" id="endFormula"></p>
+      <div class="stats" id="endStats"></div>
+      <h3>CÓDIGO DE VERIFICACIÓN</h3>
+      <div class="code" id="endCode"></div>
+      <p class="note">Toma foto de esta pantalla. El docente comprueba el código con nombre, puntos, aciertos, nota e incidencias.</p>
+      <h3>DETALLE</h3>
+      <ol class="rep" id="endList"></ol>
+      <div class="row">
+        <button class="btn primary" id="btnAgain" type="button">JUGAR DE NUEVO</button>
+        <button class="btn" id="btnMenu" type="button">Menú</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------------- Bancos de preguntas ---------------- */
+const TEACHER_TOOLS = false;
+const BANKS = [
+  { id: "7-ent", grade: "7\u00b0", topic: "N\u00fameros enteros", text:
+`(−8) + 5 = | −3 | 3 | −13 | 13
+(−12) + (−7) = | −19 | 19 | −5 | 5
+7 − (−3) = | 10 | 4 | −10 | −4
+(−4) − 9 = | −13 | 5 | 13 | −5
+(−6) × (−4) = | 24 | −24 | −10 | 10
+(−5) × 8 = | −40 | 40 | 3 | −13
+(−36) ÷ 9 = | −4 | 4 | −27 | −5
+(−48) ÷ (−6) = | 8 | −8 | 42 | −42
+(−2)^3 = | −8 | 8 | −6 | 6
+(−3)^2 = | 9 | −9 | 6 | −6
+−15 + 4 × 3 = | −3 | −33 | 27 | 3
+El valor absoluto de −9 es | 9 | −9 | 0 | 1/9
+¿Cuál número es el mayor? | −2 | −5 | −7 | −10
+La temperatura era −3 °C y bajó 5 °C. ¿Cuál es la nueva temperatura? | −8 °C | 2 °C | −2 °C | 8 °C
+Un buzo está a −20 m y sube 12 m. ¿A qué profundidad queda? | −8 m | −32 m | 8 m | 32 m` },
+  { id: "7-fra", grade: "7\u00b0", topic: "Fracciones y decimales", text:
+`1/2 + 1/3 = | 5/6 | 2/5 | 1/6 | 2/6
+3/4 − 1/2 = | 1/4 | 2/2 | 1/2 | 4/6
+2/3 + 1/6 = | 5/6 | 3/9 | 3/6 | 2/18
+3/4 × 2/3 = | 1/2 | 6/7 | 5/12 | 9/8
+2/5 ÷ 1/10 = | 4 | 1/25 | 2/50 | 1/4
+5/6 ÷ 5 = | 1/6 | 25/6 | 6 | 1/5
+¿Qué fracción es equivalente a 3/4? | 9/12 | 6/9 | 4/5 | 7/8
+18/24 simplificada al máximo es | 3/4 | 2/3 | 6/7 | 4/5
+0,25 escrito como fracción es | 1/4 | 2/5 | 1/25 | 25/10
+3/5 escrito como decimal es | 0,6 | 0,35 | 3,5 | 0,53
+1,5 + 2,75 = | 4,25 | 3,80 | 4,75 | 3,25
+3,2 × 0,5 = | 1,6 | 16 | 0,16 | 1,5
+7,5 ÷ 0,5 = | 15 | 3,75 | 1,5 | 37,5
+¿Cuál fracción es la mayor? | 3/4 | 2/3 | 5/8 | 7/12
+Ana comió 2/8 de una pizza y Luis 3/8. ¿Qué fracción queda? | 3/8 | 5/8 | 1/8 | 5/16
+El número mixto 2 1/2 como fracción impropia es | 5/2 | 3/2 | 2/2 | 21/2` },
+  { id: "7-pro", grade: "7\u00b0", topic: "Proporcionalidad y porcentajes", text:
+`El 20 % de 150 es | 30 | 20 | 75 | 3
+El 25 % de 80 es | 20 | 25 | 40 | 32
+El 50 % de 46 es | 23 | 50 | 92 | 4,6
+Una camisa de $40 000 tiene 15 % de descuento. ¿Cuánto se paga? | $34 000 | $6 000 | $46 000 | $25 000
+Un artículo de $50 000 sube 10 %. ¿Cuál es el nuevo precio? | $55 000 | $60 000 | $50 010 | $45 000
+Si 3 cuadernos cuestan $7 500, ¿cuánto cuestan 5? | $12 500 | $10 000 | $15 000 | $37 500
+Un carro recorre 180 km en 3 horas a velocidad constante. ¿Cuánto recorre en 5 horas? | 300 km | 360 km | 240 km | 900 km
+Si 4 obreros hacen un muro en 6 días, ¿cuántos días tardan 8 obreros? | 3 días | 12 días | 6 días | 2 días
+Si 6 obreros tardan 10 días, ¿cuántos días tardan 4 obreros? | 15 días | 6,7 días | 8 días | 20 días
+La razón 12 : 18 simplificada es | 2 : 3 | 3 : 2 | 4 : 5 | 6 : 8
+Resuelve la proporción 4 : x = 12 : 15 | x = 5 | x = 45 | x = 3 | x = 9
+¿Qué porcentaje es 9 de 36? | 25 % | 9 % | 36 % | 40 %
+En un curso de 40 estudiantes, 24 son mujeres. ¿Qué porcentaje son mujeres? | 60 % | 24 % | 40 % | 16 %
+En un mapa con escala 1 : 100 000, 3 cm representan | 3 km | 30 km | 300 m | 0,3 km` },
+  { id: "7-ecu", grade: "7\u00b0", topic: "Ecuaciones", text:
+`Resuelve: x + 7 = 15 | x = 8 | x = 22 | x = −8 | x = 7
+Resuelve: 3x = 21 | x = 7 | x = 18 | x = 24 | x = 63
+Resuelve: 2x − 5 = 11 | x = 8 | x = 3 | x = 13 | x = 6
+Resuelve: x − 9 = −4 | x = 5 | x = −13 | x = 13 | x = −5
+Resuelve: x ÷ 4 = 6 | x = 24 | x = 1,5 | x = 10 | x = 2
+Resuelve: 5x + 3 = 28 | x = 5 | x = 6,2 | x = 25 | x = 4
+Resuelve: 4x = 2x + 10 | x = 5 | x = 10 | x = 2 | x = 20
+Resuelve: 3(x + 2) = 18 | x = 4 | x = 6 | x = 5 | x = 8
+Resuelve: −2x = 14 | x = −7 | x = 7 | x = 12 | x = −28
+El triple de un número es 45. ¿Cuál es el número? | 15 | 42 | 48 | 135
+Un número aumentado en 12 es 30. ¿Cuál es el número? | 18 | 42 | 2,5 | 360` },
+  { id: "7-geo", grade: "7\u00b0", topic: "Geometr\u00eda y medici\u00f3n", text:
+`Área de un rectángulo de 8 cm por 5 cm | 40 cm² | 26 cm² | 13 cm² | 80 cm²
+Perímetro de un cuadrado de lado 7 cm | 28 cm | 49 cm | 14 cm | 21 cm
+Área de un triángulo de base 10 cm y altura 6 cm | 30 cm² | 60 cm² | 16 cm² | 32 cm²
+Los ángulos internos de un triángulo suman | 180° | 360° | 90° | 270°
+Los ángulos internos de un cuadrilátero suman | 360° | 180° | 540° | 720°
+Un triángulo tiene ángulos de 50° y 60°. El tercero mide | 70° | 110° | 80° | 250°
+El complemento de un ángulo de 35° mide | 55° | 145° | 65° | 325°
+El suplemento de un ángulo de 120° mide | 60° | 240° | 30° | 80°
+Un ángulo de 90° se llama | recto | agudo | obtuso | llano
+2,5 m equivalen a | 250 cm | 25 cm | 2 500 cm | 0,25 cm
+3 kg equivalen a | 3 000 g | 300 g | 30 g | 0,003 g
+Volumen de un cubo de arista 3 cm | 27 cm³ | 9 cm³ | 18 cm³ | 54 cm³
+Un polígono de 6 lados se llama | hexágono | pentágono | heptágono | octágono` },
+  { id: "7-est", grade: "7\u00b0", topic: "Estad\u00edstica y probabilidad", text:
+`La media de 4, 6, 8 y 10 es | 7 | 6 | 8 | 28
+La moda de 3, 5, 5, 7, 9 es | 5 | 3 | 5,8 | 9
+La mediana de 2, 9, 4, 7, 5 es | 5 | 4 | 7 | 9
+La mediana de 1, 3, 6, 8 es | 4,5 | 3 | 6 | 9
+El rango de 12, 5, 20, 8 es | 15 | 20 | 8 | 11,25
+Al lanzar un dado, la probabilidad de sacar 4 es | 1/6 | 4/6 | 1/4 | 1/2
+Al lanzar un dado, la probabilidad de sacar un número par es | 1/2 | 1/3 | 1/6 | 2/3
+Al lanzar una moneda, la probabilidad de sacar cara es | 1/2 | 1/4 | 1 | 2
+En una bolsa hay 3 bolas rojas y 5 azules. La probabilidad de sacar roja es | 3/8 | 3/5 | 5/8 | 1/3` },
+  { id: "8-pot", grade: "8\u00b0", topic: "Potencias y ra\u00edces", text:
+`2^5 = | 32 | 10 | 25 | 16
+3^4 = | 81 | 12 | 64 | 27
+3^2 · 3^3 = | 3^5 | 3^6 | 9^5 | 9^6
+(5^2)^3 = | 5^6 | 5^5 | 5^8 | 5^9
+7^8 ÷ 7^3 = | 7^5 | 7^11 | 7^24 | 1^5
+7^0 = | 1 | 0 | 7 | −7
+2^(−3) = | 1/8 | −8 | −6 | 8
+10^(−2) = | 0,01 | −100 | −20 | 0,1
+(2 · 5)^3 = | 1 000 | 30 | 250 | 40
+(−2)^4 = | 16 | −16 | −8 | 8
+−2^4 = | −16 | 16 | −8 | 8
+(2/3)^2 = | 4/9 | 4/6 | 2/9 | 4/3
+√144 = | 12 | 14 | 72 | 22
+√81 + √16 = | 13 | √97 | 5 | 25
+La raíz cúbica de 64 es | 4 | 8 | 16 | 32` },
+  { id: "8-cie", grade: "8\u00b0", topic: "Notaci\u00f3n cient\u00edfica y n\u00fameros reales", text:
+`4 500 000 en notación científica | 4,5 × 10^6 | 4,5 × 10^5 | 4,5 × 10^7 | 4,5 × 10^4
+0,000 32 en notación científica | 3,2 × 10^(−4) | 3,2 × 10^4 | 3,2 × 10^(−3) | 3,2 × 10^(−5)
+7,1 × 10^3 en forma decimal | 7 100 | 71 000 | 710 | 0,007 1
+1,2 × 10^(−3) en forma decimal | 0,001 2 | 0,012 | 1 200 | 0,000 12
+(2 × 10^3) × (3 × 10^4) = | 6 × 10^7 | 6 × 10^12 | 5 × 10^7 | 6 × 10^1
+√2 es un número | irracional | entero | racional | natural
+¿Cuál de estos números es racional? | 0,75 | √3 | π | √5
+¿Cuál de estos números es irracional? | √7 | √9 | 2/3 | −4
+0,333… escrito como fracción es | 1/3 | 3/10 | 33/100 | 1/30
+√20 está entre los enteros | 4 y 5 | 3 y 4 | 5 y 6 | 10 y 11` },
+  { id: "8-alg", grade: "8\u00b0", topic: "Expresiones algebraicas", text:
+`Reduce: 3a + 5b − a + 2b | 2a + 7b | 4a + 7b | 2a + 3b | 9ab
+Reduce: 5x^2 − 2x + 3x^2 + 7x | 8x^2 + 5x | 8x^2 − 9x | 13x^3 | 8x^4 + 5x
+(3x + 2) + (x − 5) = | 4x − 3 | 4x + 7 | 3x^2 − 3 | 2x − 3
+(5x − 1) − (2x − 4) = | 3x + 3 | 3x − 5 | 3x − 3 | 7x − 5
+Grado del monomio 4x^3y^2 | 5 | 3 | 2 | 6
+Grado del polinomio 3x^4 − 2x^2 + 7 | 4 | 2 | 7 | 6
+(2x^3)(4x^2) = | 8x^5 | 6x^5 | 8x^6 | 6x^6
+12x^5 ÷ 3x^2 = | 4x^3 | 9x^3 | 4x^7 | 15x^3
+(−3x^2)^2 = | 9x^4 | −9x^4 | 6x^4 | 9x^2
+2x(3x − 4) = | 6x^2 − 8x | 6x^2 − 4 | 5x^2 − 8x | 6x^2 − 8
+Valor de 2x^2 − 3 si x = −2 | 5 | −11 | 13 | −7
+Valor de x^2 + 2x si x = 3 | 15 | 12 | 21 | 11
+El doble de un número, más 5 | 2x + 5 | 2(x + 5) | x^2 + 5 | 5x + 2
+El cuadrado de un número, menos 3 | x^2 − 3 | (x − 3)^2 | 2x − 3 | 3 − x^2
+Perímetro de un rectángulo de lados x y x + 3 | 4x + 6 | 2x + 3 | x^2 + 3x | 4x + 3` },
+  { id: "8-pnot", grade: "8\u00b0", topic: "Productos notables", text:
+`(x + 3)^2 = | x^2 + 6x + 9 | x^2 + 9 | x^2 + 3x + 9 | x^2 + 6x + 6
+(x − 5)^2 = | x^2 − 10x + 25 | x^2 − 25 | x^2 + 10x + 25 | x^2 − 10x − 25
+(a + b)^2 = | a^2 + 2ab + b^2 | a^2 + b^2 | a^2 + ab + b^2 | 2a + 2b
+(2x + 1)^2 = | 4x^2 + 4x + 1 | 4x^2 + 1 | 2x^2 + 4x + 1 | 4x^2 + 2x + 1
+(3x − 2)^2 = | 9x^2 − 12x + 4 | 9x^2 − 4 | 9x^2 − 6x + 4 | 3x^2 − 12x + 4
+(x + 4)(x − 4) = | x^2 − 16 | x^2 + 16 | x^2 − 8x + 16 | x^2 − 8
+(2a + 3)(2a − 3) = | 4a^2 − 9 | 4a^2 + 9 | 2a^2 − 9 | 4a^2 − 12a − 9
+(x + 2)(x + 5) = | x^2 + 7x + 10 | x^2 + 10x + 7 | x^2 + 7x + 7 | x^2 + 10
+(x − 3)(x + 7) = | x^2 + 4x − 21 | x^2 − 4x − 21 | x^2 + 4x + 21 | x^2 − 21
+(x − 6)(x − 1) = | x^2 − 7x + 6 | x^2 + 7x + 6 | x^2 − 7x − 6 | x^2 − 6
+(x + 1)^3 = | x^3 + 3x^2 + 3x + 1 | x^3 + 1 | x^3 + 3x + 1 | x^3 + x^2 + x + 1
+Usando (a + b)^2, 102^2 = | 10 404 | 10 004 | 10 204 | 10 400
+Usando (a + b)(a − b), 31 × 29 = | 899 | 900 | 901 | 861` },
+  { id: "8-fac", grade: "8\u00b0", topic: "Factorizaci\u00f3n", text:
+`Factoriza: x^2 − 49 | (x + 7)(x − 7) | (x − 7)^2 | (x + 7)^2 | (x − 49)(x + 1)
+Factoriza: 4x^2 − 25 | (2x + 5)(2x − 5) | (4x + 5)(x − 5) | (2x − 5)^2 | (4x − 5)(x + 5)
+Factoriza: x^2 + 6x + 9 | (x + 3)^2 | (x + 9)(x + 1) | (x − 3)^2 | (x + 6)(x + 3)
+Factoriza: x^2 − 10x + 25 | (x − 5)^2 | (x + 5)^2 | (x + 5)(x − 5) | (x − 25)(x − 1)
+Factoriza: x^2 + 5x + 6 | (x + 2)(x + 3) | (x + 1)(x + 6) | (x − 2)(x − 3) | (x + 5)(x + 1)
+Factoriza: x^2 + 7x + 12 | (x + 3)(x + 4) | (x + 2)(x + 6) | (x + 1)(x + 12) | (x + 7)(x + 5)
+Factoriza: x^2 − x − 12 | (x − 4)(x + 3) | (x + 4)(x − 3) | (x − 6)(x + 2) | (x − 12)(x + 1)
+Factoriza: x^2 + 2x − 15 | (x + 5)(x − 3) | (x − 5)(x + 3) | (x + 15)(x − 1) | (x + 5)(x + 3)
+Factor común de 6x^2 + 9x | 3x(2x + 3) | 6x(x + 9) | 3x(2x + 9) | 9x(x + 6)
+Factor común de 5a^2b − 10ab^2 | 5ab(a − 2b) | 5ab(a − 10b) | 10ab(a − b) | 5a^2b(1 − 2b)
+Factoriza completamente: 3x^2 − 12 | 3(x + 2)(x − 2) | 3(x − 2)^2 | 3(x + 4)(x − 4) | 3(x^2 − 12)
+Factoriza por agrupación: ax + ay + bx + by | (a + b)(x + y) | (a + x)(b + y) | ab(x + y) | (a + y)(b + x)` },
+  { id: "8-ecu", grade: "8\u00b0", topic: "Ecuaciones", text:
+`Resuelve: 3x + 4 = x + 12 | x = 4 | x = 8 | x = 2 | x = 6
+Resuelve: 5(x − 2) = 3x + 4 | x = 7 | x = 3 | x = 1 | x = −7
+Resuelve: x ÷ 3 + 2 = 6 | x = 12 | x = 24 | x = 6 | x = 2
+Resuelve: 2(x + 3) − x = 10 | x = 4 | x = 7 | x = 2 | x = 16
+Resuelve: 0,5x + 1 = 4 | x = 6 | x = 1,5 | x = 10 | x = 2,5
+Si x^2 = 49 y x es negativo, x vale | −7 | 7 | −49 | −24,5
+La suma de dos números consecutivos es 37. El menor es | 18 | 19 | 17 | 36
+El perímetro de un cuadrado es 36 cm. Su lado mide | 9 cm | 6 cm | 18 cm | 12 cm` },
+  { id: "8-geo", grade: "8\u00b0", topic: "Geometr\u00eda", text:
+`Un triángulo rectángulo tiene catetos de 3 y 4. La hipotenusa mide | 5 | 7 | 12 | 25
+Un triángulo rectángulo tiene catetos de 6 y 8. La hipotenusa mide | 10 | 14 | 48 | 100
+La hipotenusa mide 13 y un cateto 5. El otro cateto mide | 12 | 8 | 18 | 144
+¿Cuál terna forma un triángulo rectángulo? | 5, 12, 13 | 4, 5, 6 | 2, 3, 4 | 6, 7, 8
+La diagonal de un cuadrado de lado 1 mide | √2 | 2 | 1 | √3
+Área de un círculo de radio 3 cm | 9π cm² | 6π cm² | 3π cm² | 18π cm²
+Longitud de una circunferencia de radio 5 cm | 10π cm | 25π cm | 5π cm | 20π cm
+Volumen de un prisma rectangular de 2 cm × 3 cm × 5 cm | 30 cm³ | 10 cm³ | 31 cm³ | 62 cm³
+Volumen de un cilindro de radio 2 cm y altura 5 cm | 20π cm³ | 10π cm³ | 40π cm³ | 100π cm³
+Los ángulos internos de un pentágono suman | 540° | 360° | 720° | 900°
+Cada ángulo interno de un hexágono regular mide | 120° | 60° | 135° | 720°` }
+];
+
+/* ---------------- Utilidades ---------------- */
+const $ = s => document.querySelector(s);
+const LET = ['A', 'B', 'C', 'D'];
+const COL  = ['#ff7a3d', '#34c6d1', '#ffd23f', '#b07cff', '#d9773a'];
+const COLD = ['#a8481c', '#1c7c86', '#b88e10', '#6c40b8', '#8e451f'];
+const COLL = ['#ffb48c', '#a2eef3', '#fff0a6', '#dcc4ff', '#f3a873'];
+const GLY = {
+  A: ['.###.', '#...#', '#####', '#...#', '#...#'],
+  B: ['####.', '#...#', '####.', '#...#', '####.'],
+  C: ['.####', '#....', '#....', '#....', '.####'],
+  D: ['####.', '#...#', '#...#', '#...#', '####.']
+};
+const rand = (a, b) => a + Math.random() * (b - a);
+const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = s => esc(s)
+  .replace(/\^\(([^)]+)\)/g, '<sup>$1</sup>')
+  .replace(/\^([−\-]?\d+|[a-z])/g, '<sup>$1</sup>')
+  .replace(/(\d+)\/(\d+)/g, '<span class="fr"><span>$1</span><span>$2</span></span>');
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('tiroSaber_' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('tiroSaber_' + k, JSON.stringify(v)); } catch (e) {} }
+};
+
+function parseBank(text) {
+  const qs = [], errs = [];
+  String(text || '').split(/\r?\n/).forEach((ln, i) => {
+    ln = ln.trim();
+    if (!ln || ln.startsWith('#')) return;
+    const p = ln.split('|').map(s => s.trim());
+    if (p.length !== 5 || p.some(x => !x) || new Set(p.slice(1)).size < 4) errs.push(i + 1);
+    else qs.push(p);
+  });
+  return { qs, errs };
+}
+
+/* Código de verificación */
+function fnv(str) { let h = 0x811c9dc5; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0; } return h >>> 0; }
+const normName = s => String(s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+const EPOCH = Date.UTC(2026, 0, 1);
+const CODE_KEY = 'tiro-saber';
+const PIN_HASH = 2110133426;
+function makeCode(name, score, ok, nota10, inc, mins, key) {
+  const base = [normName(name), score | 0, ok | 0, nota10 | 0, inc | 0, mins, key].join('|');
+  const h = (fnv(base) ^ Math.imul(fnv(base.split('').reverse().join('') + '#'), 2654435761)) >>> 0;
+  return mins.toString(36).toUpperCase() + '-' + h.toString(36).toUpperCase().padStart(7, '0').slice(-6);
+}
+
+/* ---------------- Sonido ---------------- */
+let AC = null, muted = store.get('muted', false);
+function ac() {
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; } }
+  if (AC && AC.state === 'suspended') AC.resume().catch(() => {});
+  return AC;
+}
+function noise(dur, vol, freq) {
+  const a = ac(); if (!a || muted) return;
+  const len = Math.floor(a.sampleRate * dur), b = a.createBuffer(1, len, a.sampleRate), d = b.getChannelData(0);
+  for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2);
+  const s = a.createBufferSource(); s.buffer = b;
+  const f = a.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = freq;
+  const g = a.createGain(); g.gain.value = vol;
+  s.connect(f).connect(g).connect(a.destination); s.start();
+}
+function tone(fr, dur, type = 'square', vol = 0.07, when = 0, to = null) {
+  const a = ac(); if (!a || muted) return;
+  const t = a.currentTime + when, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(fr, t);
+  if (to) o.frequency.exponentialRampToValueAtTime(to, t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+const sfx = {
+  shot() { noise(0.28, 0.55, 1600); },
+  hit() { noise(0.16, 0.35, 5200); tone(900, 0.07, 'square', 0.05); },
+  good() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.12, 'square', 0.06, i * 0.08)); },
+  bad() { tone(240, 0.45, 'sawtooth', 0.07, 0, 90); },
+  tick() { tone(1250, 0.04, 'square', 0.035); },
+  block() { tone(150, 0.1, 'square', 0.05); },
+  empty() { tone(420, 0.03, 'triangle', 0.06); tone(300, 0.03, 'triangle', 0.05, 0.05); },
+  over() { [392, 330, 262].forEach((f, i) => tone(f, 0.22, 'square', 0.06, i * 0.18)); }
+};
+
+/* ---------------- Lienzo y escenario ---------------- */
+const cv = $('#cv'), ctx = cv.getContext('2d'), stage = $('#stage');
+const bg = document.createElement('canvas'), bgx = bg.getContext('2d');
+let W = 320, H = 160, S = 2;
+
+function resize() {
+  const r = stage.getBoundingClientRect();
+  if (r.width < 10 || r.height < 10) return;
+  S = Math.max(2, Math.floor(Math.min(r.width, r.height * 1.7) / 200));
+  W = Math.ceil(r.width / S); H = Math.ceil(r.height / S);
+  cv.width = W; cv.height = H;
+  cv.style.width = (W * S) + 'px'; cv.style.height = (H * S) + 'px';
+  buildBg();
+}
+
+function buildBg() {
+  bg.width = W; bg.height = H;
+  const c = bgx, gy = Math.round(H * 0.68);
+  // cielo en bandas con tramado
+  const sky = ['#231a49', '#33205c', '#4c2669', '#6e2d72', '#963572', '#c3476a', '#e6655a', '#f6904f', '#ffbc5e'];
+  const bh = gy / sky.length;
+  for (let i = 0; i < sky.length; i++) {
+    const y0 = Math.floor(i * bh), y1 = Math.floor((i + 1) * bh);
+    c.fillStyle = sky[i]; c.fillRect(0, y0, W, y1 - y0);
+    if (i + 1 < sky.length) { c.fillStyle = sky[i + 1]; for (let x = (y1 - 1) % 2; x < W; x += 2) c.fillRect(x, y1 - 1, 1, 1); }
+  }
+  // estrellas tempranas
+  c.fillStyle = '#e9dcff';
+  for (let i = 0; i < W / 9; i++) { const x = (i * 97 + 13) % W, y = (i * 53 + 7) % Math.max(4, Math.floor(gy * 0.3)); c.fillRect(x, y, 1, 1); }
+  // sol con halo
+  const sx = Math.round(W * 0.63), sr = Math.max(8, Math.round(H * 0.13)), sy = gy - Math.round(sr * 0.35);
+  for (let y = -sr - 3; y <= sr + 3; y++) for (let x = -sr - 3; x <= sr + 3; x++) {
+    const d = Math.hypot(x, y);
+    if (d <= sr) { c.fillStyle = y < -sr * 0.35 ? '#fff1b0' : '#ffd77a'; c.fillRect(sx + x, sy + y, 1, 1); }
+    else if (d <= sr + 3 && (x + y) % 2 === 0) { c.fillStyle = '#ffcf73'; c.fillRect(sx + x, sy + y, 1, 1); }
+  }
+  // cordilleras
+  const ridge = (base, amp, k, col, seed) => {
+    c.fillStyle = col;
+    for (let x = 0; x < W; x++) {
+      const t = (x + seed) / W;
+      const h = amp * (0.55 * Math.sin(t * 6.2 * k + seed) + 0.3 * Math.sin(t * 15.1 * k + seed * 2) + 0.15 * Math.sin(t * 33 * k));
+      const top = Math.round(base - Math.abs(h) - amp * 0.2);
+      c.fillRect(x, top, 1, gy - top + 1);
+    }
+  };
+  ridge(gy - H * 0.05, H * 0.17, 1, '#5a2f6c', 3.1);
+  ridge(gy - H * 0.01, H * 0.09, 1.6, '#35214f', 7.7);
+  // samanes en el horizonte
+  c.fillStyle = '#211637';
+  [[0.2, 1], [0.34, 0.7], [0.8, 1.2]].forEach(([fx, s]) => {
+    const tx = Math.round(W * fx), r = Math.max(3, Math.round(H * 0.045 * s));
+    c.fillRect(tx, gy - r, 1, r);
+    for (let y = -r; y <= 0; y++) { const w = Math.round(r * 2.2 * Math.sqrt(1 - (y * y) / (r * r + 1))); c.fillRect(tx - w, gy - r * 1.4 + y, w * 2 + 1, 1); }
+  });
+  // campo con perspectiva
+  c.fillStyle = '#2d4a2b'; c.fillRect(0, gy, W, H - gy);
+  let y = gy, k = 1;
+  while (y < H) { const step = Math.max(2, Math.round(k * 1.5)); c.fillStyle = k % 2 ? '#36572f' : '#2a4428'; c.fillRect(0, y, W, step); y += step; k++; }
+  c.fillStyle = '#4c7a3a'; c.fillRect(0, gy, W, 1);
+  // casetas de lanzamiento
+  const tower = (fx) => {
+    const cx = Math.round(W * fx), top = Math.round(H * 0.62) - 4, tw = 14, bot = gy + 8;
+    c.fillStyle = '#7a4a3a'; c.fillRect(cx - tw / 2, top, tw, bot - top);
+    c.fillStyle = '#5e372b';
+    for (let yy = top + 3; yy < bot; yy += 3) { c.fillRect(cx - tw / 2, yy, tw, 1); for (let xx = cx - tw / 2 + ((yy / 3) % 2 ? 2 : 4); xx < cx + tw / 2; xx += 5) c.fillRect(xx, yy - 2, 1, 2); }
+    c.fillStyle = '#a3624a'; c.fillRect(cx - tw / 2 - 2, top - 2, tw + 4, 3);
+    c.fillStyle = '#140f22'; c.fillRect(cx - 4, top + 3, 8, 3);
+  };
+  tower(0.05); tower(0.95);
+  // plataforma de madera
+  const ph = Math.max(8, Math.round(H * 0.07));
+  c.fillStyle = '#6b4426'; c.fillRect(0, H - ph, W, ph);
+  c.fillStyle = '#4f311b';
+  for (let x = 0; x < W; x += 12) c.fillRect(x, H - ph, 1, ph);
+  c.fillRect(0, H - ph, W, 1);
+  c.fillStyle = '#8a5a33'; c.fillRect(0, H - ph + 1, W, 1);
+}
+
+/* ---------------- Estado del juego ---------------- */
+let phase = 'idle';           // idle | read | fly | result | paused | left | over
+let prevPhase = null;
+let G = null;                 // partida
+let cur = null;               // pregunta actual
+let discs = [], parts = [], pops = [];
+let readLeft = 0, timeLeft = 0, resultLeft = 0, waveGap = 0, ammo = 0, attractT = 0;
+let lastShot = 0, jamUntil = 0, shotTimes = [], lastTick = 99, flash = 0;
+let banner = null;            // {text,color,sub}
+const cross = { x: -99, y: -99, show: false, touchT: 0 };
+
+const el = {
+  qnum: $('#qnum'), qbank: $('#qbank'), qtext: $('#qtext'), panel: $('#panel'),
+  opts: [...document.querySelectorAll('.opt')],
+  score: $('#hScore'), streak: $('#hStreak'), mult: $('#hMult'), lives: $('#hLives'), ammo: $('#hAmmo'),
+  bar: $('#hBar'), fill: $('#hFill'), time: $('#hTime'), toast: $('#toast')
+};
+
+function getBankList() {
+  const list = [];
+  ['7°', '8°'].forEach(g => {
+    const all = [], topics = [];
+    BANKS.filter(b => b.grade === g).forEach(b => {
+      const qs = parseBank(b.text).qs; all.push(...qs);
+      topics.push({ id: b.id, group: 'Grado ' + g, name: `${g} · ${b.topic}`, qs });
+    });
+    list.push({ id: g === '7°' ? '7-all' : '8-all', group: 'Grado ' + g, name: `${g} · Todos los temas`, qs: all }, ...topics);
+  });
+  if (TEACHER_TOOLS) list.push({ id: 'custom', group: 'Propio', name: 'Personalizado', qs: parseBank(store.get('custom', '')).qs });
+  return list;
+}
+const gradeText = g => BANKS.filter(b => b.grade === g).map(b => '# ' + b.topic + '\n' + b.text).join('\n');
+function fillBankSelect() {
+  const sel = $('#fBank'), want = store.get('bank', '7-all');
+  sel.innerHTML = '';
+  const groups = {};
+  getBankList().forEach(b => {
+    if (!groups[b.group]) { groups[b.group] = document.createElement('optgroup'); groups[b.group].label = b.group; sel.appendChild(groups[b.group]); }
+    const o = document.createElement('option');
+    o.value = b.id; o.textContent = `${b.name} (${b.qs.length})`;
+    if (!b.qs.length) o.disabled = true;
+    groups[b.group].appendChild(o);
+  });
+  sel.value = want;
+  if (!sel.value || (sel.selectedOptions[0] && sel.selectedOptions[0].disabled)) sel.value = '7-all';
+}
+
+function show(id) { document.querySelectorAll('.ov').forEach(o => o.hidden = o.id !== id); }
+function hideAll() { document.querySelectorAll('.ov').forEach(o => o.hidden = true); }
+
+let toastT = null;
+function toast(msg) {
+  el.toast.textContent = msg; el.toast.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => el.toast.hidden = true, 1400);
+}
+
+function updateHUD() {
+  const g = G || { score: 0, streak: 0, lives: 3 };
+  el.score.textContent = g.score;
+  el.streak.textContent = g.streak;
+  const m = multFor(g.streak);
+  el.mult.textContent = m > 1 ? '×' + m : '';
+  el.mult.className = 'hv'; el.mult.style.color = 'var(--oc)';
+  el.lives.innerHTML = [0, 1, 2].map(i => `<i class="life${i < g.lives ? '' : ' off'}"></i>`).join('');
+  el.ammo.innerHTML = [0, 1].map(i => `<i class="shell${i < ammo ? '' : ' off'}"></i>`).join('');
+  updateTimer();
+}
+function updateTimer() {
+  if (!G || !cur) { el.fill.style.width = '100%'; el.time.textContent = '–'; el.bar.classList.remove('low'); return; }
+  const f = clamp(timeLeft / G.secs, 0, 1);
+  el.fill.style.width = (f * 100).toFixed(1) + '%';
+  el.time.textContent = Math.ceil(Math.max(0, timeLeft));
+  el.bar.classList.toggle('low', timeLeft <= 5);
+}
+const multFor = s => s >= 6 ? 3 : s >= 3 ? 2 : 1;
+const INC_PENALTY = 0.3;
+function gradeOf(ok, total, inc) {
+  const raw = total ? 1 + 4 * ok / total - INC_PENALTY * inc : 1;
+  return Math.round(clamp(raw, 1, 5) * 10) / 10;
+}
+function levelOf(n) {
+  if (n >= 4.6) return ['SUPERIOR', 'sup'];
+  if (n >= 4.0) return ['ALTO', 'alt'];
+  if (n >= 3.0) return ['BÁSICO', 'bas'];
+  return ['BAJO', 'baj'];
+}
+const notaTxt = n => n.toFixed(1).replace('.', ',');
+
+/* ---------------- Flujo de partida ---------------- */
+function startGame() {
+  const bankId = $('#fBank').value;
+  const b = getBankList().find(x => x.id === bankId);
+  const err = $('#startErr');
+  if (!b || !b.qs.length) { err.textContent = 'Ese banco no tiene preguntas. Elige otro o edítalo.'; err.hidden = false; return; }
+  err.hidden = true;
+  const name = $('#fName').value.trim() || 'Sin nombre';
+  const nq = $('#fNq').value, secs = +$('#fSecs').value;
+  store.set('name', $('#fName').value.trim()); store.set('bank', bankId); store.set('nq', nq); store.set('secs', secs);
+  const n = nq === 'all' ? b.qs.length : Math.min(+nq, b.qs.length);
+  G = {
+    name, bankName: b.name, secs, order: shuffle(b.qs.slice()).slice(0, n), qi: -1,
+    score: 0, streak: 0, best: 0, lives: 3, ok: 0, log: [],
+    stats: { shots: 0, air: 0, blocked: 0, bursts: 0, synthetic: 0, tabs: 0, pauses: 0 }
+  };
+  unlocked = false;
+  ac();
+  hideAll();
+  discs = []; parts = []; pops = [];
+  nextQuestion();
+}
+
+function nextQuestion() {
+  G.qi++;
+  if (G.lives <= 0 || G.qi >= G.order.length) return gameOver();
+  const [q, ...opts] = G.order[G.qi];
+  const idx = shuffle([0, 1, 2, 3]);
+  cur = { q, opts: idx.map(i => ({ t: opts[i], correct: i === 0 })), correctPos: idx.indexOf(0), t0: 0, wave: 0 };
+  el.qnum.textContent = `PREGUNTA ${G.qi + 1} DE ${G.order.length}`;
+  el.qbank.textContent = G.bankName.toUpperCase();
+  el.qtext.innerHTML = fmt(q);
+  el.opts.forEach((o, i) => { o.className = 'opt'; o.querySelector('.txt').innerHTML = fmt(cur.opts[i].t); });
+  el.panel.classList.remove('veil');
+  discs = []; banner = null;
+  const words = q.split(/\s+/).length + cur.opts.reduce((s, o) => s + o.t.split(/\s+/).length, 0);
+  readLeft = clamp(2.2 + words * 0.11, 3, 6);
+  timeLeft = G.secs; ammo = 0; lastTick = 99;
+  phase = 'read';
+  updateHUD();
+}
+
+function waveDuration() {
+  const p = G.order.length > 1 ? G.qi / (G.order.length - 1) : 0;
+  return 5.2 - 1.7 * p;
+}
+
+function startWave() {
+  const order = shuffle([0, 1, 2, 3]);
+  const lanes = shuffle([0.13, 0.25, 0.37, 0.49]);
+  const sides = shuffle([0, 0, 1, 1]);
+  const dur = waveDuration();
+  discs = order.map((oi, k) => {
+    const s = sides[k];
+    const x0 = s ? 0.95 : 0.05, y0 = 0.62;
+    const x2 = s ? rand(-0.18, 0.22) : rand(0.78, 1.18), y2 = 1.15;
+    const ya = lanes[k];
+    return {
+      oi, x0, y0, x2, y2, x1: (x0 + x2) / 2 + rand(-0.12, 0.12), y1: 2 * ya - 0.5 * (y0 + y2),
+      dur: dur * rand(0.9, 1.1), t: -k * 0.33 - rand(0, 0.15), alive: true, spin: rand(7, 13), glow: false
+    };
+  });
+  ammo = 2; waveGap = 0; cur.wave++;
+  if (!cur.t0) cur.t0 = performance.now();
+  updateHUD();
+}
+
+function discPos(d) {
+  const u = clamp(d.t / d.dur, 0, 1), v = 1 - u;
+  return {
+    x: (v * v * d.x0 + 2 * v * u * d.x1 + u * u * d.x2) * W,
+    y: (v * v * d.y0 + 2 * v * u * d.y1 + u * u * d.y2) * H,
+    u
+  };
+}
+
+function resolve(kind, pos, d) {
+  if (phase !== 'fly') return;
+  const t = cur.t0 ? (performance.now() - cur.t0) / 1000 : 0;
+  const rightTxt = cur.opts[cur.correctPos].t;
+  el.opts.forEach((o, i) => {
+    if (i === cur.correctPos) o.classList.add('ok');
+    else if (i === pos) o.classList.add('bad');
+    else o.classList.add('dim');
+  });
+  if (kind === 'ok') {
+    G.streak++; G.best = Math.max(G.best, G.streak); G.ok++;
+    const pts = Math.round((100 + 100 * clamp(timeLeft / G.secs, 0, 1)) * multFor(G.streak));
+    G.score += pts;
+    const p = discPos(d);
+    pops.push({ x: p.x, y: p.y - 8, text: '+' + pts, color: '#5ee38a', life: 1.2 });
+    banner = { text: 'CORRECTO', color: '#5ee38a', sub: multFor(G.streak) > 1 ? 'RACHA ×' + multFor(G.streak) : '' };
+    sfx.good();
+    resultLeft = 1.5;
+  } else {
+    G.lives--; G.streak = 0;
+    const cd = discs.find(x => x.alive && x.oi === cur.correctPos);
+    if (cd) cd.glow = true;
+    banner = kind === 'mal' ? { text: 'FALLASTE', color: '#ff5a5a', sub: 'ERA LA ' + LET[cur.correctPos] + '  ·  -1 VIDA' }
+           : kind === 'tiempo' ? { text: 'TIEMPO AGOTADO', color: '#ffd23f', sub: 'ERA LA ' + LET[cur.correctPos] + '  ·  -1 VIDA' }
+           : { text: 'ANULADA', color: '#ff5a5a', sub: '-1 VIDA' };
+    sfx.bad();
+    resultLeft = 2.8;
+  }
+  G.log.push({ q: cur.q, res: kind, chose: pos != null ? LET[pos] : null, right: LET[cur.correctPos], rightTxt, t });
+  phase = 'result';
+  updateHUD();
+}
+
+function voidQuestion() {
+  if (phase !== 'read' && phase !== 'fly') return;
+  G.stats.tabs++;
+  const wasRead = phase === 'read';
+  phase = 'fly';             // permite registrar el resultado
+  if (wasRead && !cur.t0) cur.t0 = performance.now();
+  resolve('anulada', null, null);
+  phase = 'left';
+  el.panel.classList.add('veil');
+  show('ovLeft');
+}
+
+function gameOver() {
+  phase = 'over'; cur = null; discs = [];
+  el.panel.classList.add('veil');
+  sfx.over();
+  const s = G.stats, inc = s.tabs + s.synthetic + s.bursts;
+  const mins = Math.max(0, Math.floor((Date.now() - EPOCH) / 60000));
+  const key = CODE_KEY;
+  const nota = gradeOf(G.ok, G.order.length, inc), [lvl, lvlCls] = levelOf(nota);
+  const code = makeCode(G.name, G.score, G.ok, Math.round(nota * 10), inc, mins, key);
+  const answered = G.log.length, prec = s.shots ? Math.round(100 * G.ok / s.shots) : 0;
+  $('#endTitle').textContent = G.lives <= 0 ? 'SIN VIDAS' : 'PARTIDA COMPLETA';
+  $('#endWho').textContent = `${G.name} · ${G.bankName} · ${new Date().toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' })}`;
+  $('#endScore').textContent = 'NOTA ' + notaTxt(nota);
+  $('#endLvl').textContent = lvl; $('#endLvl').className = 'lvl ' + lvlCls;
+  $('#endFormula').textContent = `1 + 4 × ${G.ok}/${G.order.length}` + (inc ? ` − ${inc} × 0,3 por incidencias` : '') + ` = ${notaTxt(nota)}`;
+  const stat = (v, l, warn) => `<div class="stat${warn ? ' warn' : ''}"><b>${v}</b><span>${l}</span></div>`;
+  $('#endStats').innerHTML =
+    stat(G.score, 'puntos') +
+    stat(`${G.ok}/${G.order.length}`, 'aciertos') +
+    stat(G.best, 'mejor racha') +
+    stat(prec + ' %', `puntería (${s.shots} disparos)`) +
+    stat(s.air, 'disparos al aire') +
+    stat(inc, 'incidencias', inc > 0) +
+    stat(s.pauses, 'pausas', s.pauses > 0);
+  const detail = [];
+  if (s.tabs) detail.push(`${s.tabs} salida(s) del juego`);
+  if (s.bursts) detail.push(`${s.bursts} ráfaga(s)`);
+  if (s.synthetic) detail.push(`${s.synthetic} clic(s) automático(s)`);
+  if (s.blocked) detail.push(`${s.blocked} disparo(s) durante la lectura`);
+  $('#endStats').insertAdjacentHTML('beforeend', detail.length ? `<p class="note" style="grid-column:1/-1;margin:0">Registro: ${detail.join(' · ')}.</p>` : '');
+  $('#endCode').textContent = code;
+  const tagTxt = { ok: 'ACIERTO', mal: 'FALLO', tiempo: 'TIEMPO', anulada: 'ANULADA' };
+  $('#endList').innerHTML = G.log.map((r, i) => {
+    const extra = r.res === 'ok' ? `${r.t.toFixed(1)} s` : r.res === 'mal' ? `eligió ${r.chose}` : '';
+    return `<li><span class="n">${i + 1}</span><span>${fmt(r.q)}${r.res !== 'ok' ? `<br><span class="note">Correcta: ${fmt(r.rightTxt)}</span>` : ''}</span><span class="tag ${r.res}">${tagTxt[r.res]}${extra ? ' · ' + extra : ''}</span></li>`;
+  }).join('') + (answered < G.order.length ? `<li><span class="n">–</span><span class="note">${G.order.length - answered} pregunta(s) sin jugar</span><span></span></li>` : '');
+  show('ovEnd');
+  updateHUD();
+}
+
+function togglePause() {
+  if (phase === 'read' || phase === 'fly' || phase === 'result') {
+    prevPhase = phase; phase = 'paused'; G.stats.pauses++;
+    el.panel.classList.add('veil'); show('ovPause');
+  } else if (phase === 'paused') {
+    phase = prevPhase; el.panel.classList.remove('veil'); hideAll();
+  }
+}
+
+/* ---------------- Disparo ---------------- */
+function pointerToWorld(e) {
+  const r = cv.getBoundingClientRect();
+  return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H };
+}
+
+cv.addEventListener('pointermove', e => { const p = pointerToWorld(e); cross.x = p.x; cross.y = p.y; cross.show = e.pointerType === 'mouse'; });
+cv.addEventListener('pointerleave', () => { cross.show = false; });
+cv.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  const p = pointerToWorld(e);
+  cross.x = p.x; cross.y = p.y;
+  if (e.pointerType !== 'mouse') { cross.touchT = 0.35; }
+  if (!G || phase === 'idle' || phase === 'over') return;
+  if (!e.isTrusted) { G.stats.synthetic++; return; }
+  const now = performance.now();
+  shotTimes = shotTimes.filter(t => now - t < 1200); shotTimes.push(now);
+  if (phase === 'read') { G.stats.blocked++; sfx.block(); toast('Gatillo bloqueado: primero lee la pregunta'); return; }
+  if (phase !== 'fly') return;
+  if (now < jamUntil) { sfx.block(); toast('Gatillo trabado'); return; }
+  if (shotTimes.length > 4) { jamUntil = now + 1500; G.stats.bursts++; sfx.block(); toast('¡Ráfaga! Gatillo trabado 1,5 s'); return; }
+  if (now - lastShot < 260) return;
+  if (ammo <= 0) { sfx.empty(); toast('Sin cartuchos: espera la próxima tanda'); return; }
+  lastShot = now; ammo--; G.stats.shots++;
+  sfx.shot(); flash = reduceMotion ? 0 : 0.06;
+  updateHUD();
+  const pad = e.pointerType === 'mouse' ? 3 : 6;
+  let best = null, bestD = Infinity;
+  discs.forEach(d => {
+    if (!d.alive || d.t < 0 || d.t > d.dur) return;
+    const q = discPos(d);
+    const n = Math.hypot((p.x - q.x) / (11 + pad), (p.y - q.y) / (5 + pad + 2));
+    if (n <= 1 && n < bestD) { best = d; bestD = n; }
+  });
+  if (!best) {
+    G.stats.air++;
+    for (let i = 0; i < 6; i++) parts.push({ x: p.x, y: p.y, vx: rand(-14, 14), vy: rand(-18, 2), life: rand(0.3, 0.6), c: '#d8cfe8', s: 1 });
+    return;
+  }
+  best.alive = false;
+  sfx.hit();
+  const q = discPos(best), ci = best.oi;
+  const n = reduceMotion ? 8 : 18;
+  for (let i = 0; i < n; i++) parts.push({ x: q.x + rand(-6, 6), y: q.y + rand(-2, 2), vx: rand(-55, 55), vy: rand(-70, -10), life: rand(0.6, 1.1), c: i % 3 ? COL[ci] : COLD[ci], s: i % 4 ? 1 : 2 });
+  resolve(ci === cur.correctPos ? 'ok' : 'mal', ci, best);
+});
+document.addEventListener('contextmenu', e => { if (e.target.closest('#stage,#panel,#hud')) e.preventDefault(); });
+document.addEventListener('copy', e => { if (G && phase !== 'over' && phase !== 'idle') e.preventDefault(); });
+
+/* Salir del juego durante una pregunta */
+let blurT = null;
+document.addEventListener('visibilitychange', () => { if (document.hidden) voidQuestion(); });
+window.addEventListener('blur', () => { clearTimeout(blurT); blurT = setTimeout(() => { if (!document.hasFocus()) voidQuestion(); }, 1000); });
+window.addEventListener('focus', () => clearTimeout(blurT));
+
+/* ---------------- Bucle ---------------- */
+function update(dt) {
+  if (phase === 'paused' || phase === 'left') return;
+  if (phase === 'idle' || phase === 'over') {
+    attractT -= dt;
+    if (attractT <= 0) {
+      attractT = rand(0.9, 1.8);
+      const s = Math.random() < 0.5, x2 = s ? rand(-0.1, 0.3) : rand(0.7, 1.1), ya = rand(0.15, 0.45);
+      discs.push({ oi: 4, x0: s ? 0.95 : 0.05, y0: 0.62, x2, y2: 1.15, x1: ((s ? 0.95 : 0.05) + x2) / 2, y1: 2 * ya - 0.5 * (0.62 + 1.15), dur: rand(3.5, 5), t: 0, alive: true, spin: rand(7, 12), demo: true });
+    }
+  }
+  if (phase === 'read') {
+    readLeft -= dt;
+    if (readLeft <= 0) { phase = 'fly'; startWave(); }
+  }
+  if (phase === 'fly') {
+    timeLeft -= dt;
+    const sec = Math.ceil(timeLeft);
+    if (sec <= 5 && sec < lastTick && sec > 0) { sfx.tick(); }
+    lastTick = sec;
+    updateTimer();
+    if (timeLeft <= 0) { timeLeft = 0; resolve('tiempo', null, null); }
+  }
+  discs.forEach(d => { d.t += dt; });
+  discs = discs.filter(d => d.alive && d.t <= d.dur + 0.1);
+  if (phase === 'fly' && discs.length === 0) {
+    waveGap += dt;
+    if (waveGap > 0.45) startWave();
+  }
+  if (phase === 'result') {
+    resultLeft -= dt;
+    if (resultLeft <= 0) { banner = null; nextQuestion(); }
+  }
+  parts.forEach(p => { p.vy += 140 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt; });
+  parts = parts.filter(p => p.life > 0);
+  pops.forEach(p => { p.y -= 14 * dt; p.life -= dt; });
+  pops = pops.filter(p => p.life > 0);
+  if (cross.touchT > 0) cross.touchT -= dt;
+  if (flash > 0) flash -= dt;
+}
+
+function drawDisc(x, y, ci, wob, glyph) {
+  x = Math.round(x); y = Math.round(y);
+  const rx = Math.max(3, Math.round(11 * wob)), ry = 5;
+  for (let dy = -ry; dy <= ry; dy++) {
+    const w = Math.round(rx * Math.sqrt(Math.max(0, 1 - (dy * dy) / ((ry + 0.6) * (ry + 0.6)))));
+    ctx.fillStyle = dy < -2 ? COLL[ci] : dy > 2 ? COLD[ci] : COL[ci];
+    ctx.fillRect(x - w, y + dy, w * 2 + 1, 1);
+  }
+  if (glyph && rx >= 6) {
+    ctx.fillStyle = '#1a1430';
+    const g = GLY[glyph];
+    for (let r = 0; r < 5; r++) for (let c = 0; c < 5; c++) if (g[r][c] === '#') ctx.fillRect(x - 2 + c, y - 2 + r, 1, 1);
+  }
+}
+
+function txt(s, x, y, size, color, weight = 700) {
+  ctx.font = `${weight} ${size}px Silkscreen, 'Courier New', monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#140f22';
+  [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1]].forEach(([dx, dy]) => ctx.fillText(s, Math.round(x) + dx, Math.round(y) + dy));
+  ctx.fillStyle = color; ctx.fillText(s, Math.round(x), Math.round(y));
+}
+
+function render(now) {
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(bg, 0, 0);
+  const blink = Math.floor(now / 160) % 2 === 0;
+  discs.forEach(d => {
+    if (d.t < 0) return;
+    const p = discPos(d), wob = 0.82 + 0.18 * Math.abs(Math.sin(d.t * d.spin));
+    if (d.glow && blink) {
+      ctx.fillStyle = '#5ee38a';
+      const r = 15;
+      for (let a = 0; a < 24; a++) { const t = a / 24 * Math.PI * 2; ctx.fillRect(Math.round(p.x + Math.cos(t) * r), Math.round(p.y + Math.sin(t) * (r * 0.6)), 1, 1); }
+    }
+    drawDisc(p.x, p.y, d.oi, wob, d.demo ? null : LET[d.oi]);
+  });
+  parts.forEach(p => { ctx.fillStyle = p.c; ctx.fillRect(Math.round(p.x), Math.round(p.y), p.s, p.s); });
+  const small = W < 240 ? 8 : 16;
+  pops.forEach(p => txt(p.text, p.x, p.y, 8, p.color));
+  if (phase === 'read' && G) {
+    txt('PREGUNTA ' + (G.qi + 1), W / 2, H * 0.28, small, '#fff3dd');
+    txt('LEE...  ' + Math.ceil(readLeft), W / 2, H * 0.28 + small + 4, small, '#ffd23f');
+  }
+  if (banner) {
+    txt(banner.text, W / 2, H * 0.3, small, banner.color);
+    if (banner.sub) txt(banner.sub, W / 2, H * 0.3 + small + 3, 8, '#fff3dd');
+  }
+  if (phase === 'idle') txt('DISPARA A LA RESPUESTA', W / 2, H * 0.3, small, '#fff3dd');
+  if (flash > 0) { ctx.fillStyle = 'rgba(255,240,200,0.18)'; ctx.fillRect(0, 0, W, H); }
+  if (cross.show || cross.touchT > 0) {
+    const jam = performance.now() < jamUntil || phase === 'read';
+    const x = Math.round(cross.x), y = Math.round(cross.y);
+    ctx.fillStyle = '#140f22';
+    ctx.fillRect(x - 6, y - 1, 13, 3); ctx.fillRect(x - 1, y - 6, 3, 13);
+    ctx.fillStyle = jam ? '#ff5a5a' : '#fff3dd';
+    ctx.fillRect(x - 5, y, 4, 1); ctx.fillRect(x + 2, y, 4, 1);
+    ctx.fillRect(x, y - 5, 1, 4); ctx.fillRect(x, y + 2, 1, 4);
+  }
+}
+
+let last = performance.now();
+function loop(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  update(dt); render(now);
+  requestAnimationFrame(loop);
+}
+
+/* ---------------- Controles de interfaz ---------------- */
+$('#btnPlay').addEventListener('click', startGame);
+$('#btnHelp').addEventListener('click', () => show('ovHelp'));
+let unlocked = false, pinTarget = null, pinFails = 0, pinLockUntil = 0;
+function requirePin(fn) {
+  if (unlocked) return fn();
+  pinTarget = fn; $('#fPin').value = ''; $('#pinMsg').textContent = '';
+  show('ovPin'); setTimeout(() => $('#fPin').focus(), 50);
+}
+function tryPin() {
+  const m = $('#pinMsg'), now = Date.now();
+  if (now < pinLockUntil) { m.textContent = `Demasiados intentos. Espera ${Math.ceil((pinLockUntil - now) / 1000)} s.`; return; }
+  if (fnv('tiro-saber-pin|' + $('#fPin').value.trim()) === PIN_HASH) {
+    unlocked = true; pinFails = 0; const fn = pinTarget; pinTarget = null; fn && fn();
+  } else {
+    pinFails++; $('#fPin').value = '';
+    if (pinFails >= 3) { pinLockUntil = now + 60000; pinFails = 0; m.textContent = 'Código incorrecto. Acceso bloqueado 60 s.'; }
+    else m.textContent = 'Código incorrecto.';
+  }
+}
+$('#btnPinOk').addEventListener('click', tryPin);
+$('#btnVerify').addEventListener('click', () => requirePin(() => { $('#vMsg').textContent = ''; show('ovVerify'); }));
+$('#btnEdit').addEventListener('click', () => requirePin(openEditor));
+function openEditor() {
+  $('#fCustom').value = store.get('custom', '') || '# Escribe aquí tus preguntas\n¿Cuánto es 15 % de 200? | 30 | 15 | 20 | 35';
+  $('#editMsg').textContent = ''; $('#editMsg').className = 'note';
+  show('ovEdit');
+}
+document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show('ovStart')));
+$('#btnLoad7').addEventListener('click', () => { $('#fCustom').value = gradeText('7°'); });
+$('#btnLoad8').addEventListener('click', () => { $('#fCustom').value = gradeText('8°'); });
+$('#btnSaveBank').addEventListener('click', () => {
+  const txtv = $('#fCustom').value, r = parseBank(txtv), m = $('#editMsg');
+  if (r.errs.length) {
+    m.className = 'err';
+    m.textContent = `Revisa la(s) línea(s) ${r.errs.slice(0, 12).join(', ')}${r.errs.length > 12 ? '…' : ''}: cada una necesita pregunta y 4 opciones distintas separadas por |.`;
+    return;
+  }
+  store.set('custom', txtv);
+  fillBankSelect();
+  if (r.qs.length) { $('#fBank').value = 'custom'; store.set('bank', 'custom'); }
+  m.className = 'good'; m.textContent = `Guardado: ${r.qs.length} pregunta(s) en el banco personalizado.`;
+});
+$('#btnCheck').addEventListener('click', () => {
+  const m = $('#vMsg'), code = $('#vCode').value.trim().toUpperCase();
+  const mt = code.match(/^([0-9A-Z]+)-([0-9A-Z]{6})$/);
+  if (!mt) { m.className = 'err'; m.textContent = 'El código debe tener la forma XXXX-XXXXXX.'; return; }
+  const mins = parseInt(mt[1], 36);
+  const notaIn = parseFloat(String($('#vNota').value).replace(',', '.'));
+  if (isNaN(notaIn)) { m.className = 'err'; m.textContent = 'Escribe la nota tal como sale en el reporte, por ejemplo 3,8.'; return; }
+  const calc = makeCode($('#vName').value, parseInt($('#vScore').value, 10) || 0, parseInt($('#vOk').value, 10) || 0, Math.round(notaIn * 10), parseInt($('#vInc').value, 10) || 0, mins, CODE_KEY);
+  const when = new Date(EPOCH + mins * 60000).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' });
+  if (calc === code) { m.className = 'good'; m.textContent = `Código válido. Partida jugada el ${when}.`; }
+  else { m.className = 'err'; m.textContent = 'El código no coincide con esos datos. Revisa el nombre exacto y los números, o confirma que la partida se jugó con este juego.'; }
+});
+$('#btnPause').addEventListener('click', togglePause);
+$('#btnResume').addEventListener('click', togglePause);
+$('#btnQuit').addEventListener('click', () => { if (phase === 'paused') { phase = prevPhase; gameOver(); } });
+$('#btnLeftOk').addEventListener('click', () => { hideAll(); el.panel.classList.remove('veil'); phase = 'result'; resultLeft = 0.01; banner = null; });
+$('#btnAgain').addEventListener('click', startGame);
+$('#btnMenu').addEventListener('click', () => { G = null; cur = null; phase = 'idle'; fillBankSelect(); updateHUD(); el.qnum.textContent = 'PREGUNTA –'; show('ovStart'); });
+function setSoundLabel() { $('#btnSound').textContent = 'Sonido: ' + (muted ? 'no' : 'sí'); }
+$('#btnSound').addEventListener('click', () => { muted = !muted; store.set('muted', muted); setSoundLabel(); });
+$('#btnFull').addEventListener('click', () => {
+  const a = $('#app');
+  if (document.fullscreenElement) { if (document.exitFullscreen) document.exitFullscreen(); return; }
+  if (!a.requestFullscreen) { toast('La pantalla completa no está disponible aquí'); return; }
+  a.requestFullscreen().catch(() => toast('La pantalla completa no está disponible aquí'));
+});
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,textarea,select')) {
+    if (e.key === 'Enter' && !$('#ovStart').hidden && e.target.id === 'fName') startGame();
+    if (e.key === 'Enter' && e.target.id === 'fPin') tryPin();
+    return;
+  }
+  const k = e.key.toLowerCase();
+  if (k === 'p') togglePause();
+  else if (k === 'm') { muted = !muted; store.set('muted', muted); setSoundLabel(); }
+  else if (e.ctrlKey || e.metaKey) { if (k === 'c' || k === 'a') e.preventDefault(); }
+});
+
+/* ---------------- Arranque ---------------- */
+if (!TEACHER_TOOLS) ['#btnEdit', '#btnVerify', '#ovEdit', '#ovVerify', '#ovPin'].forEach(s => { const n = $(s); if (n) n.remove(); });
+$('#fName').value = store.get('name', '');
+$('#fNq').value = store.get('nq', '10');
+$('#fSecs').value = String(store.get('secs', 20));
+fillBankSelect();
+setSoundLabel();
+updateHUD();
+if (window.ResizeObserver) new ResizeObserver(resize).observe(stage); else window.addEventListener('resize', resize);
+resize();
+requestAnimationFrame(loop);
+$('#nojs').hidden = true;
+
+})();
+</script>
+</body>
+</html>
