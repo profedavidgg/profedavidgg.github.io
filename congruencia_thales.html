@@ -1,0 +1,825 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Congruencia y Thales</title>
+<style>
+:root{
+  --desk:#E6EAF2;
+  --paper:#FFFFFF;
+  --grid:#DEE5F0;
+  --margin:#F2A7A3;
+  --ink:#1D2B64;
+  --ink2:#3A4A8C;
+  --graphite:#333B47;
+  --muted:#6A7585;
+  --line:#C6D2E3;
+  --red:#C8302B;
+  --green:#157F4C;
+  --amber:#B8860B;
+  --c1:#1D6FD0;
+  --c2:#C8302B;
+  --c3:#157F4C;
+  --ui:"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --math:"Cambria Math",Cambria,"Times New Roman",serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--desk);color:var(--graphite);font:17px/1.55 var(--ui);min-height:100vh}
+button{font:inherit}
+:focus-visible{outline:3px solid #6C8CFF;outline-offset:2px}
+.wrap{max-width:1150px;margin:0 auto;padding:16px 16px 44px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:6px 24px;margin:4px 4px 14px}
+header.top h1{margin:0;color:var(--ink);font-size:29px;line-height:1.1;letter-spacing:-.01em}
+header.top p{margin:3px 0 0;color:var(--muted);font-size:15px}
+header.top .school{color:var(--muted);font-size:13.5px;text-align:right}
+
+.tabs{display:flex;gap:6px;padding-left:20px;position:relative;z-index:2;flex-wrap:wrap}
+.tab{border:1px solid var(--line);border-bottom:none;background:#EDF1F8;color:var(--ink2);
+  padding:10px 20px 9px;border-radius:12px 12px 0 0;cursor:pointer;font-weight:600;position:relative;top:1px;
+  border-top:5px solid var(--tabc,#9fb0d8)}
+.tab[data-tab="congruencia"]{--tabc:#1D6FD0}
+.tab[data-tab="thales"]{--tabc:#157F4C}
+.tab[data-tab="ejercicios"]{--tabc:#D99100}
+.tab[aria-selected="true"]{background:var(--paper);color:var(--ink);padding-bottom:10px}
+
+.sheet{background-color:var(--paper);border:1px solid var(--line);border-radius:4px 14px 14px 14px;position:relative;
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px;background-position:-1px -1px;
+  box-shadow:0 1px 0 #cdd7e5,0 12px 30px -18px rgba(29,43,100,.35);min-height:520px}
+.sheet::before{content:"";position:absolute;top:0;bottom:0;left:50px;width:2px;background:var(--margin);opacity:.75}
+.panel{padding:24px 26px 30px 74px}
+.panel[hidden]{display:none}
+
+h2{color:var(--ink);font-size:23px;margin:0 0 6px}
+h3{color:var(--ink);font-size:18.5px;margin:0 0 6px}
+.lead{margin:0 0 16px;max-width:72ch}
+.math{font-family:var(--math)}
+.math i{font-style:italic}
+sup{font-size:.72em;line-height:0;position:relative;top:-.38em}
+
+.card{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin:0 0 16px}
+.flex{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:18px;align-items:start}
+.flex3{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+
+.btn{border:2px solid var(--ink);background:#fff;color:var(--ink);border-radius:10px;padding:8px 16px;cursor:pointer;font-weight:600;font-size:16px}
+.btn:hover{background:#F1F4FF}
+.btn.primary{background:var(--ink);color:#fff}
+.btn.primary:hover{background:#2A3C85}
+.btn.small{padding:6px 12px;font-size:15px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}
+
+svg{display:block;width:100%;height:auto;background:#fff;border-radius:10px;border:1px solid var(--line);margin:0 auto}
+#svg-super{max-width:450px} #svg-crit{max-width:390px} #svg-aaa{max-width:450px}
+#svg-par{max-width:400px} #svg-tri{max-width:400px} #svg-sol{max-width:430px}
+#q-fig svg{border:1px solid var(--line)}
+.fig{text-align:center}
+.cap{color:var(--muted);font-size:14.5px;margin-top:6px}
+
+.crit{border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;background:#fff;cursor:pointer;transition:border-color .15s,background .15s}
+.crit:hover{border-color:#94A8D8;background:#FAFCFF}
+.crit[aria-pressed="true"]{border-color:var(--ink);background:#F2F5FF}
+.crit h4{margin:0 0 2px;color:var(--ink);font-size:17.5px}
+.crit .sub{color:var(--muted);font-size:14px;margin-bottom:6px}
+.crit p{margin:0;font-size:15.5px}
+
+.slider{display:flex;align-items:center;gap:12px;margin:10px 0 4px;flex-wrap:wrap}
+.slider input[type=range]{flex:1;min-width:170px;accent-color:#1D6FD0}
+.slider label{font-weight:600;color:var(--ink2);font-size:15px}
+
+table.vals{border-collapse:collapse;width:100%;font-size:16px;margin-top:8px}
+table.vals th,table.vals td{border:1px solid var(--line);padding:5px 8px;text-align:center}
+table.vals th{background:#EEF2FA;color:var(--ink);font-size:15px}
+table.vals td.r{font-weight:700;color:var(--c3);font-family:var(--math);font-size:18px}
+
+.note{border-left:5px solid var(--amber);background:#FFF9E8;padding:10px 13px;border-radius:8px;margin:12px 0;font-size:16px}
+.ok{border-left-color:var(--green);background:#EAF7F0}
+.bad{border-left-color:var(--red);background:#FDF0EF}
+
+.qbox{background:rgba(255,255,255,.96);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.qhead{display:flex;justify-content:space-between;color:var(--muted);font-size:15px;flex-wrap:wrap;gap:6px}
+.qtext{font-size:19px;color:var(--ink);margin:8px 0 12px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.opt{display:flex;align-items:center;gap:10px;text-align:left;background:#fff;border:2px solid var(--line);border-radius:12px;padding:10px 13px;cursor:pointer;font-size:17px;color:var(--ink)}
+.opt:hover{border-color:#94A8D8}
+.opt .let{font-weight:700;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#EEF2FA;color:var(--ink);flex:none;font-size:15px}
+.opt[aria-pressed="true"]{border-color:var(--ink);background:#F1F4FF}
+.opt.good{border-color:var(--green);background:#EAF7F0}
+.opt.wrong{border-color:var(--red);background:#FDF0EF}
+.opt:disabled{cursor:default}
+.num-in{font:inherit;font-size:19px;padding:8px 10px;border:2px solid var(--line);border-radius:10px;width:120px;text-align:center}
+.score{display:flex;gap:18px;flex-wrap:wrap;font-size:16px;color:var(--ink2)}
+.score b{color:var(--ink);font-size:19px}
+.bar{height:8px;background:#E7ECF4;border-radius:99px;overflow:hidden;margin:8px 0 2px}
+.bar>span{display:block;height:100%;background:var(--ink);width:0;transition:width .25s}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.chip{border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;cursor:pointer;color:var(--graphite);font-size:15px}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+
+.tag{display:inline-block;background:#EAF0FF;color:var(--ink);border-radius:6px;padding:1px 9px;font-size:14px;font-weight:600}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:14.5px;color:var(--muted);margin-top:6px;justify-content:center}
+.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+
+@media (max-width:900px){
+  .flex,.flex3,.opts{grid-template-columns:1fr}
+  .panel{padding:18px 14px 26px 60px}
+  header.top h1{font-size:25px}
+}
+@media (max-width:560px){
+  #svg-super,#svg-crit,#svg-aaa,#svg-par,#svg-tri,#svg-sol{max-width:100%}
+  .card{padding:13px 12px}
+  .sheet::before{left:28px}
+  .panel{padding:16px 10px 22px 40px}
+  .tabs{padding-left:6px}
+  .tab{padding:8px 13px 7px;font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important;animation:none!important}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>Congruencia de triángulos y teorema de Thales</h1>
+      <p>Explicación visual y ejercicios. Grado octavo.</p>
+    </div>
+    <div class="school">I. E. Gonzalo Jiménez de Quesada<br>San Sebastián de Mariquita, Tolima</div>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="Secciones">
+    <button class="tab" role="tab" data-tab="congruencia" aria-selected="true" id="t-congruencia" aria-controls="tab-congruencia">Congruencia</button>
+    <button class="tab" role="tab" data-tab="thales" aria-selected="false" id="t-thales" aria-controls="tab-thales">Teorema de Thales</button>
+    <button class="tab" role="tab" data-tab="ejercicios" aria-selected="false" id="t-ejercicios" aria-controls="tab-ejercicios">Ejercicios</button>
+  </nav>
+
+  <main class="sheet">
+
+    <!-- ============ CONGRUENCIA ============ -->
+    <section class="panel" id="tab-congruencia" role="tabpanel" aria-labelledby="t-congruencia">
+      <h2>¿Qué significa que dos triángulos sean congruentes?</h2>
+      <p class="lead">Son congruentes cuando tienen <b>la misma forma y el mismo tamaño</b>: al superponerlos coinciden exactamente. Pulsa el botón y observa cómo el segundo triángulo encaja sobre el primero.</p>
+
+      <div class="flex">
+        <div class="card fig">
+          <svg id="svg-super" viewBox="0 0 440 230" role="img" aria-label="Dos triángulos que se superponen"></svg>
+          <div class="actions" style="justify-content:center">
+            <button class="btn primary" id="btn-super">Superponer</button>
+            <button class="btn" id="btn-reset">Separar</button>
+          </div>
+          <p class="cap">Las marcas iguales (rayitas y arcos) señalan los elementos que miden lo mismo.</p>
+        </div>
+        <div class="card">
+          <h3>La idea clave</h3>
+          <p>Si dos triángulos son congruentes, coinciden sus <b>seis</b> elementos: tres lados y tres ángulos. Se escribe
+            <span class="math">△<i>ABC</i> ≅ △<i>DEF</i></span>.</p>
+          <p>Pero <b>no hace falta comprobar los seis</b>: con <b>tres datos bien escogidos</b> ya queda garantizado. Esos tres datos son los <b>criterios de congruencia</b>.</p>
+          <div class="note">Ojo con el orden de las letras: <span class="math">△<i>ABC</i> ≅ △<i>DEF</i></span> significa que <span class="math"><i>A</i></span> corresponde con <span class="math"><i>D</i></span>, <span class="math"><i>B</i></span> con <span class="math"><i>E</i></span> y <span class="math"><i>C</i></span> con <span class="math"><i>F</i></span>.</div>
+        </div>
+      </div>
+
+      <h2 style="margin-top:8px">Los cuatro criterios</h2>
+      <p class="lead">Pulsa cada criterio y mira qué elementos se resaltan en el triángulo de la derecha.</p>
+
+      <div class="flex">
+        <div class="flex3">
+          <button class="crit" data-crit="LLL" aria-pressed="true">
+            <h4>LLL</h4><div class="sub">lado · lado · lado</div>
+            <p>Los <b>tres lados</b> de un triángulo son iguales a los tres del otro.</p>
+          </button>
+          <button class="crit" data-crit="LAL" aria-pressed="false">
+            <h4>LAL</h4><div class="sub">lado · ángulo · lado</div>
+            <p><b>Dos lados</b> y el <b>ángulo que está entre ellos</b>.</p>
+          </button>
+          <button class="crit" data-crit="ALA" aria-pressed="false">
+            <h4>ALA</h4><div class="sub">ángulo · lado · ángulo</div>
+            <p><b>Dos ángulos</b> y el <b>lado que está entre ellos</b>.</p>
+          </button>
+          <button class="crit" data-crit="LAA" aria-pressed="false">
+            <h4>LAA</h4><div class="sub">lado · ángulo · ángulo</div>
+            <p><b>Dos ángulos</b> y un <b>lado que NO está entre ellos</b>.</p>
+          </button>
+        </div>
+        <div class="card fig">
+          <svg id="svg-crit" viewBox="0 0 380 240" role="img" aria-label="Triángulo con los elementos del criterio resaltados"></svg>
+          <p class="cap" id="cap-crit"></p>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:4px">
+        <h3>¿Y si los tres ángulos son iguales?</h3>
+        <p>No basta. Dos triángulos con los tres ángulos iguales tienen la <b>misma forma</b>, pero pueden tener <b>distinto tamaño</b>: son <b>semejantes</b>, no congruentes. Mueve el deslizador y compruébalo.</p>
+        <div class="slider">
+          <label for="sl-aaa">Tamaño del segundo triángulo</label>
+          <input type="range" id="sl-aaa" min="40" max="150" value="60">
+          <span class="math" id="lbl-aaa"></span>
+        </div>
+        <div class="fig"><svg id="svg-aaa" viewBox="0 0 440 210" role="img" aria-label="Dos triángulos semejantes de distinto tamaño"></svg></div>
+        <div class="note"><b>No existe el criterio «AAA».</b> Para asegurar congruencia siempre hace falta al menos un lado.</div>
+      </div>
+    </section>
+
+    <!-- ============ THALES ============ -->
+    <section class="panel" id="tab-thales" role="tabpanel" aria-labelledby="t-thales" hidden>
+      <h2>Teorema de Thales</h2>
+      <p class="lead">Si varias <b>rectas paralelas</b> cortan a dos rectas secantes, los segmentos que quedan determinados en una son <b>proporcionales</b> a los de la otra. Mueve los deslizadores: las medidas cambian, pero las dos razones siempre dan lo mismo.</p>
+
+      <div class="card">
+        <h3>Tres paralelas cortadas por dos secantes</h3>
+        <div class="flex">
+          <div class="fig">
+            <svg id="svg-par" viewBox="0 0 420 300" role="img" aria-label="Tres rectas paralelas cortadas por dos secantes"></svg>
+          </div>
+          <div>
+            <div class="slider">
+              <label for="sl-par">Mover la paralela del medio</label>
+              <input type="range" id="sl-par" min="20" max="80" value="40">
+            </div>
+            <div class="slider">
+              <label for="sl-abr">Abrir las secantes</label>
+              <input type="range" id="sl-abr" min="0" max="100" value="45">
+            </div>
+            <table class="vals" id="tbl-par"></table>
+            <div class="note ok" id="nota-par"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Thales en el triángulo</h3>
+        <p>Si una recta <b>paralela a un lado</b> corta a los otros dos, los divide en segmentos proporcionales. Mueve la recta <span class="math"><i>DE</i></span> y observa la tabla.</p>
+        <div class="flex">
+          <div class="fig">
+            <svg id="svg-tri" viewBox="0 0 420 290" role="img" aria-label="Triángulo con una paralela a la base"></svg>
+          </div>
+          <div>
+            <div class="slider">
+              <label for="sl-tri">Subir o bajar <span class="math"><i>DE</i></span></label>
+              <input type="range" id="sl-tri" min="15" max="85" value="45">
+            </div>
+            <table class="vals" id="tbl-tri"></table>
+            <div class="note ok" id="nota-tri"></div>
+            <p style="margin:10px 0 0;font-size:16px">Para hallar una medida se arma la proporción y se multiplica <b>en aspa</b> (producto cruzado):</p>
+            <p class="math" style="text-align:center;font-size:21px;margin:6px 0 0">AD / DB = AE / EC</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Aplicación: medir una altura con la sombra</h3>
+        <p>Los rayos del sol llegan <b>paralelos</b>, así que el poste con su sombra y la vara con la suya forman triángulos de la misma forma. Sus lados son proporcionales.</p>
+        <div class="flex">
+          <div class="fig">
+            <svg id="svg-sol" viewBox="0 0 430 250" role="img" aria-label="Poste y vara con sus sombras"></svg>
+          </div>
+          <div>
+            <div class="slider">
+              <label for="sl-sol">Inclinación del sol</label>
+              <input type="range" id="sl-sol" min="25" max="70" value="45">
+            </div>
+            <table class="vals" id="tbl-sol"></table>
+            <div class="note" id="nota-sol"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ EJERCICIOS ============ -->
+    <section class="panel" id="tab-ejercicios" role="tabpanel" aria-labelledby="t-ejercicios" hidden>
+      <h2>Ejercicios</h2>
+      <p class="lead">Elige el tipo de ejercicio. Cada vez salen datos distintos, así que puedes practicar las veces que quieras.</p>
+
+      <div class="chips" role="group" aria-label="Tipo de ejercicio">
+        <button class="chip" data-tipo="mezcla" aria-pressed="true">Mezcla de todo</button>
+        <button class="chip" data-tipo="criterio" aria-pressed="false">¿Cuál criterio?</button>
+        <button class="chip" data-tipo="thales" aria-pressed="false">Thales: hallar x</button>
+        <button class="chip" data-tipo="problema" aria-pressed="false">Problemas</button>
+      </div>
+
+      <div class="qbox">
+        <div class="qhead">
+          <span id="q-num">Pregunta 1</span>
+          <span class="score">
+            <span>Aciertos <b id="q-ok">0</b></span>
+            <span>Intentos <b id="q-tot">0</b></span>
+          </span>
+        </div>
+        <div class="bar"><span id="q-bar"></span></div>
+        <div class="qtext" id="q-text"></div>
+        <div class="fig" id="q-fig" style="margin-bottom:12px"></div>
+        <div id="q-answer"></div>
+        <div id="q-feedback"></div>
+        <div class="actions">
+          <button class="btn primary" id="q-check">Comprobar</button>
+          <button class="btn" id="q-next">Otro ejercicio</button>
+          <button class="btn" id="q-reset">Reiniciar puntaje</button>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const NS='http://www.w3.org/2000/svg';
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{const r=a.slice();for(let i=r.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[r[i],r[j]]=[r[j],r[i]];}return r;};
+
+/* ---------- utilidades SVG ---------- */
+function el(tag,attrs,parent){
+  const n=document.createElementNS(NS,tag);
+  for(const k in attrs) n.setAttribute(k,attrs[k]);
+  if(parent) parent.appendChild(n);
+  return n;
+}
+function clear(svg){while(svg.firstChild) svg.removeChild(svg.firstChild);}
+function line(svg,x1,y1,x2,y2,o={}){
+  return el('line',Object.assign({x1,y1,x2,y2,stroke:o.stroke||'#333B47','stroke-width':o.w||2.2,
+    'stroke-linecap':'round','stroke-dasharray':o.dash||''},o.extra||{}),svg);
+}
+function poly(svg,pts,o={}){
+  return el('polygon',{points:pts.map(p=>p[0]+','+p[1]).join(' '),fill:o.fill||'none',
+    stroke:o.stroke||'#333B47','stroke-width':o.w||2.2,'stroke-linejoin':'round'},svg);
+}
+function txt(svg,x,y,s,o={}){
+  const t=el('text',{x,y,fill:o.fill||'#1D2B64','font-size':o.size||15,
+    'font-family':o.fam||'Segoe UI, Arial, sans-serif','font-weight':o.weight||600,
+    'text-anchor':o.anchor||'middle','dominant-baseline':o.base||'middle'},svg);
+  t.textContent=s; return t;
+}
+function dot(svg,x,y,r,c){el('circle',{cx:x,cy:y,r:r||3.4,fill:c||'#1D2B64'},svg);}
+/* marcas de lado: n rayitas perpendiculares en el punto medio */
+function tick(svg,p,q,n,color){
+  const mx=(p[0]+q[0])/2, my=(p[1]+q[1])/2;
+  const dx=q[0]-p[0], dy=q[1]-p[1], L=Math.hypot(dx,dy);
+  const ux=dx/L, uy=dy/L;          // dirección del lado
+  const nx=-uy, ny=ux;             // perpendicular
+  const sep=5, h=6;
+  for(let i=0;i<n;i++){
+    const off=(i-(n-1)/2)*sep;
+    const cx=mx+ux*off, cy=my+uy*off;
+    line(svg,cx-nx*h,cy-ny*h,cx+nx*h,cy+ny*h,{stroke:color||'#333B47',w:2.4});
+  }
+}
+/* arco de ángulo en el vértice v, entre los puntos a y b */
+function arc(svg,v,a,b,r,n,color){
+  const ang=(p)=>Math.atan2(p[1]-v[1],p[0]-v[0]);
+  let a1=ang(a), a2=ang(b);
+  let d=a2-a1;
+  while(d<=-Math.PI) d+=2*Math.PI;
+  while(d>Math.PI) d-=2*Math.PI;
+  for(let i=0;i<(n||1);i++){
+    const rr=r+i*4.5;
+    const p1=[v[0]+rr*Math.cos(a1), v[1]+rr*Math.sin(a1)];
+    const p2=[v[0]+rr*Math.cos(a1+d), v[1]+rr*Math.sin(a1+d)];
+    const sweep = d>0 ? 1 : 0;
+    el('path',{d:`M ${p1[0]} ${p1[1]} A ${rr} ${rr} 0 0 ${sweep} ${p2[0]} ${p2[1]}`,
+      fill:'none',stroke:color||'#333B47','stroke-width':2.2},svg);
+  }
+}
+
+/* =====================================================================
+   1) SUPERPOSICIÓN DE DOS TRIÁNGULOS
+   ===================================================================== */
+const SUP={on:false};
+function drawSuper(t){                 // t: 0 separado, 1 superpuesto
+  const svg=$('svg-super'); clear(svg);
+  const A=[40,185], B=[165,185], C=[75,70];
+  const dx=(1-t)*185, dy=0;
+  const D=[A[0]+dx,A[1]+dy], E=[B[0]+dx,B[1]+dy], F=[C[0]+dx,C[1]+dy];
+  // triángulo 1
+  poly(svg,[A,B,C],{stroke:'#1D6FD0',w:2.6});
+  tick(svg,A,B,1,'#1D6FD0'); tick(svg,B,C,2,'#1D6FD0'); tick(svg,C,A,3,'#1D6FD0');
+  txt(svg,A[0]-13,A[1]+8,'A'); txt(svg,B[0]+12,B[1]+8,'B'); txt(svg,C[0]-6,C[1]-14,'C');
+  // triángulo 2
+  const op = t>0.92 ? 0.55 : 1;
+  poly(svg,[D,E,F],{stroke:'#C8302B',w:2.6,fill:t>0.92?'rgba(200,48,43,.10)':'none'});
+  const g=svg.lastChild; g.setAttribute('opacity',op);
+  tick(svg,D,E,1,'#C8302B'); tick(svg,E,F,2,'#C8302B'); tick(svg,F,D,3,'#C8302B');
+  if(t<0.92){
+    txt(svg,D[0]-13,D[1]+8,'D',{fill:'#C8302B'}); txt(svg,E[0]+12,E[1]+8,'E',{fill:'#C8302B'});
+    txt(svg,F[0]-6,F[1]-14,'F',{fill:'#C8302B'});
+  }else{
+    txt(svg,300,86,'¡Coinciden',{fill:'#157F4C',size:17});
+    txt(svg,300,108,'exactamente!',{fill:'#157F4C',size:17});
+    txt(svg,300,140,'△ABC ≅ △DEF',{fill:'#157F4C',size:18,fam:'Cambria Math, serif'});
+  }
+}
+function animSuper(to){
+  const from=SUP.on?1:0;
+  if(from===to) return;
+  const dur=650, t0=performance.now();
+  const step=(now)=>{
+    let k=Math.min(1,(now-t0)/dur);
+    k=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;      // easeInOut
+    drawSuper(from+(to-from)*k);
+    if(k<1) requestAnimationFrame(step); else SUP.on=(to===1);
+  };
+  requestAnimationFrame(step);
+}
+$('btn-super').addEventListener('click',()=>animSuper(1));
+$('btn-reset').addEventListener('click',()=>animSuper(0));
+
+/* =====================================================================
+   2) LOS CUATRO CRITERIOS
+   ===================================================================== */
+const CRIT={
+  LLL:{cap:'Se conocen los tres lados. No hace falta ningún ángulo.',
+       lados:[1,2,3], angs:[]},
+  LAL:{cap:'Se conocen dos lados y el ángulo que queda ENTRE ellos (en A).',
+       lados:[1,3], angs:[{v:'A',n:1}]},
+  ALA:{cap:'Se conocen dos ángulos y el lado que queda ENTRE ellos (AB).',
+       lados:[1], angs:[{v:'A',n:1},{v:'B',n:2}]},
+  LAA:{cap:'Se conocen dos ángulos y un lado que NO queda entre ellos (BC).',
+       lados:[2], angs:[{v:'A',n:1},{v:'B',n:2}]}
+};
+function drawCrit(name){
+  const svg=$('svg-crit'); clear(svg);
+  const A=[55,195], B=[300,195], C=[120,55];
+  const P={A,B,C};
+  const c=CRIT[name];
+  // triángulo base
+  poly(svg,[A,B,C],{stroke:'#8A94A6',w:2.4});
+  // lados resaltados: 1=AB, 2=BC, 3=CA
+  const pares={1:[A,B],2:[B,C],3:[C,A]};
+  c.lados.forEach(k=>{
+    const [p,q]=pares[k];
+    line(svg,p[0],p[1],q[0],q[1],{stroke:'#1D6FD0',w:4.5});
+    tick(svg,p,q,k,'#1D6FD0');
+  });
+  // ángulos resaltados
+  c.angs.forEach(a=>{
+    const v=P[a.v];
+    const otros=['A','B','C'].filter(x=>x!==a.v).map(x=>P[x]);
+    arc(svg,v,otros[0],otros[1],24,a.n,'#C8302B');
+  });
+  txt(svg,A[0]-14,A[1]+10,'A'); txt(svg,B[0]+14,B[1]+10,'B'); txt(svg,C[0]-4,C[1]-15,'C');
+  // leyenda
+  txt(svg,190,228,name,{size:19,fill:'#1D2B64'});
+  $('cap-crit').textContent=c.cap;
+}
+document.querySelectorAll('.crit').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.crit').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));
+    drawCrit(b.dataset.crit);
+  });
+});
+
+/* =====================================================================
+   3) AAA NO SIRVE
+   ===================================================================== */
+function drawAAA(){
+  const svg=$('svg-aaa'); clear(svg);
+  const k=+$('sl-aaa').value/100;
+  const base=[30,175], w=130, h=105;
+  poly(svg,[[base[0],base[1]],[base[0]+w,base[1]],[base[0]+w*0.42,base[1]-h]],{stroke:'#1D6FD0',w:2.6});
+  arc(svg,[base[0],base[1]],[base[0]+w,base[1]],[base[0]+w*0.42,base[1]-h],20,1,'#C8302B');
+  arc(svg,[base[0]+w,base[1]],[base[0]+w*0.42,base[1]-h],[base[0],base[1]],20,2,'#C8302B');
+  const x2=250;
+  poly(svg,[[x2,base[1]],[x2+w*k,base[1]],[x2+w*k*0.42,base[1]-h*k]],{stroke:'#157F4C',w:2.6});
+  arc(svg,[x2,base[1]],[x2+w*k,base[1]],[x2+w*k*0.42,base[1]-h*k],20*Math.min(1,k),1,'#C8302B');
+  arc(svg,[x2+w*k,base[1]],[x2+w*k*0.42,base[1]-h*k],[x2,base[1]],20*Math.min(1,k),2,'#C8302B');
+  txt(svg,base[0]+w*0.45,195,'triángulo 1',{size:14,fill:'#6A7585'});
+  txt(svg,x2+w*k*0.45,195,'triángulo 2',{size:14,fill:'#6A7585'});
+  txt(svg,220,24,'Mismos ángulos · distinto tamaño',{size:16,fill:'#B8860B'});
+  $('lbl-aaa').textContent='×'+k.toFixed(2);
+}
+$('sl-aaa').addEventListener('input',drawAAA);
+
+/* =====================================================================
+   4) THALES: TRES PARALELAS
+   ===================================================================== */
+function drawPar(){
+  const svg=$('svg-par'); clear(svg);
+  const p=+$('sl-par').value/100;         // posición de la paralela del medio
+  const ab=+$('sl-abr').value/100;        // apertura de las secantes
+  const y1=40, y3=260, ym=y1+(y3-y1)*p;
+  // secantes: x = f(y)
+  const s1=(y)=>60+(y-y1)*(0.10+0.35*ab);
+  const s2=(y)=>330-(y-y1)*(0.05+0.18*ab);
+  for(const [y,lbl] of [[y1,'r₁'],[ym,'r₂'],[y3,'r₃']]){
+    line(svg,25,y,395,y,{stroke:'#8A94A6',w:1.8});
+    txt(svg,405,y,lbl,{size:13,fill:'#6A7585'});
+  }
+  line(svg,s1(y1-15),y1-15,s1(y3+15),y3+15,{stroke:'#333B47',w:2});
+  line(svg,s2(y1-15),y1-15,s2(y3+15),y3+15,{stroke:'#333B47',w:2});
+  const A=[s1(y1),y1],B=[s1(ym),ym],C=[s1(y3),y3];
+  const D=[s2(y1),y1],E=[s2(ym),ym],F=[s2(y3),y3];
+  line(svg,A[0],A[1],B[0],B[1],{stroke:'#1D6FD0',w:5});
+  line(svg,B[0],B[1],C[0],C[1],{stroke:'#157F4C',w:5});
+  line(svg,D[0],D[1],E[0],E[1],{stroke:'#1D6FD0',w:5});
+  line(svg,E[0],E[1],F[0],F[1],{stroke:'#157F4C',w:5});
+  [[A,'A'],[B,'B'],[C,'C']].forEach(([q,s])=>{dot(svg,q[0],q[1]);txt(svg,q[0]-16,q[1]-2,s);});
+  [[D,"A'"],[E,"B'"],[F,"C'"]].forEach(([q,s])=>{dot(svg,q[0],q[1]);txt(svg,q[0]+19,q[1]-2,s);});
+  const d=(u,v)=>Math.hypot(u[0]-v[0],u[1]-v[1])/10;
+  const AB=d(A,B),BC=d(B,C),A2=d(D,E),B2=d(E,F);
+  $('tbl-par').innerHTML=
+    `<tr><th>AB</th><th>BC</th><th>AB / BC</th></tr>
+     <tr><td>${AB.toFixed(2)}</td><td>${BC.toFixed(2)}</td><td class="r">${(AB/BC).toFixed(3)}</td></tr>
+     <tr><th>A'B'</th><th>B'C'</th><th>A'B' / B'C'</th></tr>
+     <tr><td>${A2.toFixed(2)}</td><td>${B2.toFixed(2)}</td><td class="r">${(A2/B2).toFixed(3)}</td></tr>`;
+  $('nota-par').innerHTML='Las dos razones dan <b>el mismo valor</b>, muevas lo que muevas. Eso es el teorema de Thales.';
+}
+$('sl-par').addEventListener('input',drawPar);
+$('sl-abr').addEventListener('input',drawPar);
+
+/* =====================================================================
+   5) THALES EN EL TRIÁNGULO
+   ===================================================================== */
+function drawTri(){
+  const svg=$('svg-tri'); clear(svg);
+  const t=+$('sl-tri').value/100;
+  const A=[150,35], B=[40,250], C=[370,250];
+  const D=[A[0]+(B[0]-A[0])*t, A[1]+(B[1]-A[1])*t];
+  const E=[A[0]+(C[0]-A[0])*t, A[1]+(C[1]-A[1])*t];
+  poly(svg,[A,B,C],{stroke:'#333B47',w:2.4});
+  line(svg,A[0],A[1],D[0],D[1],{stroke:'#1D6FD0',w:5});
+  line(svg,D[0],D[1],B[0],B[1],{stroke:'#157F4C',w:5});
+  line(svg,A[0],A[1],E[0],E[1],{stroke:'#1D6FD0',w:5});
+  line(svg,E[0],E[1],C[0],C[1],{stroke:'#157F4C',w:5});
+  line(svg,D[0],D[1],E[0],E[1],{stroke:'#C8302B',w:3});
+  // marcas de paralelismo
+  const mk=(p,q,c)=>{const mx=(p[0]+q[0])/2,my=(p[1]+q[1])/2;
+    const dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy);
+    el('path',{d:`M ${mx-dx/L*6-dy/L*5} ${my-dy/L*6+dx/L*5} L ${mx+dy/L*0} ${my-dx/L*0} L ${mx-dx/L*6+dy/L*5} ${my-dy/L*6-dx/L*5}`,
+      fill:'none',stroke:c,'stroke-width':2},svg);};
+  mk(D,E,'#C8302B'); mk(B,C,'#C8302B');
+  [[A,'A',-6,-16],[B,'B',-16,10],[C,'C',16,10],[D,'D',-17,0],[E,'E',17,0]].forEach(([q,s,ox,oy])=>{
+    dot(svg,q[0],q[1]); txt(svg,q[0]+ox,q[1]+oy,s);
+  });
+  const d=(u,v)=>Math.hypot(u[0]-v[0],u[1]-v[1])/10;
+  const AD=d(A,D),DB=d(D,B),AE=d(A,E),EC=d(E,C);
+  $('tbl-tri').innerHTML=
+    `<tr><th>AD</th><th>DB</th><th>AD / DB</th></tr>
+     <tr><td>${AD.toFixed(2)}</td><td>${DB.toFixed(2)}</td><td class="r">${(AD/DB).toFixed(3)}</td></tr>
+     <tr><th>AE</th><th>EC</th><th>AE / EC</th></tr>
+     <tr><td>${AE.toFixed(2)}</td><td>${EC.toFixed(2)}</td><td class="r">${(AE/EC).toFixed(3)}</td></tr>`;
+  $('nota-tri').innerHTML='Mientras <span class="math"><i>DE</i></span> siga siendo <b>paralela</b> a <span class="math"><i>BC</i></span>, las dos razones coinciden.';
+}
+$('sl-tri').addEventListener('input',drawTri);
+
+/* =====================================================================
+   6) SOMBRAS
+   ===================================================================== */
+function drawSol(){
+  const svg=$('svg-sol'); clear(svg);
+  const ang=+$('sl-sol').value;                 // grados sobre el horizonte
+  const k=1/Math.tan(ang*Math.PI/180);          // sombra = altura * k
+  const suelo=210;
+  line(svg,15,suelo,415,suelo,{stroke:'#8A94A6',w:2.4});
+  const hP=130, hV=48;                          // alturas en px
+  const xP=120, xV=300;
+  const sP=hP*k, sV=hV*k;
+  // poste
+  line(svg,xP,suelo,xP,suelo-hP,{stroke:'#333B47',w:5});
+  line(svg,xP,suelo,xP+sP,suelo,{stroke:'#1D6FD0',w:5});
+  line(svg,xP,suelo-hP,xP+sP,suelo,{stroke:'#B8860B',w:2,dash:'5 4'});
+  // vara
+  line(svg,xV,suelo,xV,suelo-hV,{stroke:'#333B47',w:4});
+  line(svg,xV,suelo,xV+sV,suelo,{stroke:'#1D6FD0',w:5});
+  line(svg,xV,suelo-hV,xV+sV,suelo,{stroke:'#B8860B',w:2,dash:'5 4'});
+  txt(svg,xP-16,suelo-hP/2,'h',{fill:'#333B47',size:16});
+  txt(svg,xP+sP/2,suelo+16,'sombra',{fill:'#1D6FD0',size:13});
+  txt(svg,xV-14,suelo-hV/2,'2 m',{fill:'#333B47',size:13});
+  txt(svg,xV+sV/2,suelo+16,'sombra',{fill:'#1D6FD0',size:13});
+  txt(svg,215,26,'Los rayos del sol llegan paralelos',{size:15,fill:'#B8860B'});
+  // valores en metros: la vara mide 2 m
+  const escala=2/hV;
+  const Hm=hP*escala, sPm=sP*escala, sVm=sV*escala;
+  $('tbl-sol').innerHTML=
+    `<tr><th></th><th>altura</th><th>sombra</th><th>altura / sombra</th></tr>
+     <tr><td>Poste</td><td>${Hm.toFixed(2)} m</td><td>${sPm.toFixed(2)} m</td><td class="r">${(Hm/sPm).toFixed(3)}</td></tr>
+     <tr><td>Vara</td><td>2,00 m</td><td>${sVm.toFixed(2)} m</td><td class="r">${(2/sVm).toFixed(3)}</td></tr>`;
+  $('nota-sol').innerHTML=`La razón <b>altura ÷ sombra</b> es la misma. Por eso basta medir la sombra del poste y la vara con su sombra: <span class="math">h = ${sPm.toFixed(2)} × (2 ÷ ${sVm.toFixed(2)}) = <b>${Hm.toFixed(2)}</b> m</span>.`;
+}
+$('sl-sol').addEventListener('input',drawSol);
+
+/* =====================================================================
+   7) EJERCICIOS
+   ===================================================================== */
+const EJ={tipo:'mezcla',n:0,ok:0,q:null,sel:-1,resuelto:false};
+
+/* --- generadores --- */
+function genCriterio(){
+  const casos=[
+    {c:'LLL',t:(X,Y)=>`En △${X} y △${Y} se sabe que los <b>tres lados</b> de uno son iguales a los tres lados del otro: ${X[0]}${X[1]} = ${Y[0]}${Y[1]}, ${X[1]}${X[2]} = ${Y[1]}${Y[2]} y ${X[2]}${X[0]} = ${Y[2]}${Y[0]}.`},
+    {c:'LAL',t:(X,Y)=>`En △${X} y △${Y}: ${X[0]}${X[1]} = ${Y[0]}${Y[1]}, el ángulo en ${X[1]} es igual al ángulo en ${Y[1]}, y ${X[1]}${X[2]} = ${Y[1]}${Y[2]}. <i>El ángulo queda entre los dos lados.</i>`},
+    {c:'ALA',t:(X,Y)=>`En △${X} y △${Y}: el ángulo en ${X[0]} es igual al de ${Y[0]}, ${X[0]}${X[1]} = ${Y[0]}${Y[1]}, y el ángulo en ${X[1]} es igual al de ${Y[1]}. <i>El lado queda entre los dos ángulos.</i>`},
+    {c:'LAA',t:(X,Y)=>`En △${X} y △${Y}: el ángulo en ${X[0]} es igual al de ${Y[0]}, el ángulo en ${X[1]} es igual al de ${Y[1]}, y ${X[1]}${X[2]} = ${Y[1]}${Y[2]}. <i>El lado NO queda entre los dos ángulos.</i>`},
+    {c:'No se puede',t:(X,Y)=>`En △${X} y △${Y} los <b>tres ángulos</b> de uno son iguales a los tres del otro, pero no se conoce ningún lado.`}
+  ];
+  const pares=[['ABC','DEF'],['PQR','STU'],['MNO','XYZ'],['RST','UVW']];
+  const [X,Y]=pick(pares);
+  const caso=pick(casos);
+  return {
+    kind:'opcion',
+    enun:caso.t(X,Y)+'<br><b>¿Qué criterio permite afirmar que son congruentes?</b>',
+    opts:shuffle(shuffle(['LLL','LAL','ALA','LAA','No se puede'].filter(o=>o!==caso.c)).slice(0,3).concat([caso.c])),
+    correcta:caso.c,
+    explica: caso.c==='No se puede'
+      ? 'Tres ángulos iguales solo dan triángulos <b>semejantes</b>: misma forma, distinto tamaño. Siempre hace falta al menos un lado.'
+      : `Es <b>${caso.c}</b>. Fíjate en la posición: en LAL el ángulo va <b>entre</b> los dos lados; en ALA el lado va <b>entre</b> los dos ángulos; en LAA el lado queda <b>por fuera</b>.`
+  };
+}
+function genThales(){
+  const k=rnd(2,5);                   // razón de proporcionalidad
+  const a=rnd(2,9), b=rnd(2,9);
+  const A=a, B=b, C=a*k, D=b*k;       // A/B = C/D
+  const modo=rnd(1,4);                // qué valor se oculta
+  const enTri=Math.random()<0.5;
+  let enun, resp, prop;
+  const n=['AB','BC',"A'B'","B'C'"], m=['AD','DB','AE','EC'];
+  const L=enTri?m:n;
+  const vals=[A,B,C,D];
+  resp=vals[modo-1];
+  const mostrar=i=> (i===modo-1) ? 'x' : vals[i];
+  prop=`${mostrar(0)} / ${mostrar(1)} = ${mostrar(2)} / ${mostrar(3)}`;
+  enun = enTri
+    ? `En el triángulo <span class="math"><i>ABC</i></span> se traza <span class="math"><i>DE</i> ∥ <i>BC</i></span>. Se sabe que `
+    : `Tres rectas paralelas cortan a dos secantes. Se sabe que `;
+  const datos=[0,1,2,3].filter(i=>i!==modo-1).map(i=>`<span class="math">${L[i]} = ${vals[i]}</span>`);
+  enun += datos.join(', ')+`. <b>¿Cuánto mide <span class="math">${L[modo-1]}</span>?</b>`;
+  return {
+    kind:'numero', enun, correcta:resp, fig:enTri?'tri':'par',
+    explica:`Armo la proporción <span class="math">${L[0]}/${L[1]} = ${L[2]}/${L[3]}</span>, o sea <span class="math">${prop}</span>. `+
+            `Multiplico en aspa y despejo: <b>x = ${resp}</b>.`
+  };
+}
+function genProblema(){
+  const tipo=rnd(1,3);
+  if(tipo===1){
+    const hv=rnd(1,3), sv=hv*rnd(2,3)/2, k=rnd(2,6);
+    const sp=sv*k, hp=hv*k;
+    return {kind:'numero',fig:'sol',
+      enun:`Una vara de <b>${hv} m</b> proyecta una sombra de <b>${f(sv)} m</b>. A la misma hora, un poste proyecta una sombra de <b>${f(sp)} m</b>. <b>¿Cuánto mide el poste, en metros?</b>`,
+      correcta:hp,
+      explica:`La razón altura ÷ sombra es la misma: <span class="math">h / ${f(sp)} = ${hv} / ${f(sv)}</span>. Multiplico en aspa y despejo: <b>h = ${hp} m</b>.`};
+  }
+  if(tipo===2){
+    const esc=rnd(2,6), cm=rnd(3,9), m=cm*esc;
+    const cm2=rnd(2,12), m2=cm2*esc;
+    return {kind:'numero',
+      enun:`En un plano, <b>${cm} cm</b> representan <b>${m} m</b> de la cancha. <b>¿Cuántos metros representan ${cm2} cm?</b>`,
+      correcta:m2,
+      explica:`Proporción: <span class="math">${cm} / ${m} = ${cm2} / x</span>. En aspa: <span class="math">${cm}x = ${m*cm2}</span>, luego <b>x = ${m2} m</b>.`};
+  }
+  const x=rnd(2,9), lado=rnd(3,9)*x;
+  return {kind:'numero',
+    enun:`Se sabe que <span class="math">△<i>ABC</i> ≅ △<i>DEF</i></span>. Si <span class="math"><i>AB</i> = ${Math.round(lado/x)}x</span> y su lado correspondiente <span class="math"><i>DE</i> = ${lado}</span>, <b>¿cuánto vale x?</b>`,
+    correcta:x,
+    explica:`En triángulos congruentes los lados correspondientes son <b>iguales</b>: <span class="math">${Math.round(lado/x)}x = ${lado}</span>, así que <b>x = ${x}</b>.`};
+}
+function f(v){return Number.isInteger(v)?v:String(v).replace('.',',');}
+
+function nuevaPregunta(){
+  const t=EJ.tipo;
+  let q;
+  if(t==='criterio') q=genCriterio();
+  else if(t==='thales') q=genThales();
+  else if(t==='problema') q=genProblema();
+  else q=pick([genCriterio,genThales,genThales,genProblema])();
+  EJ.q=q; EJ.sel=-1; EJ.resuelto=false;
+  EJ.n++;
+  $('q-num').textContent='Pregunta '+EJ.n;
+  $('q-text').innerHTML=q.enun;
+  $('q-feedback').innerHTML='';
+  $('q-check').disabled=false;
+  // figura de apoyo
+  const fig=$('q-fig'); fig.innerHTML='';
+  if(q.fig==='tri') fig.innerHTML=miniTri();
+  else if(q.fig==='par') fig.innerHTML=miniPar();
+  else if(q.fig==='sol') fig.innerHTML=miniSol();
+  // zona de respuesta
+  const box=$('q-answer'); box.innerHTML='';
+  if(q.kind==='opcion'){
+    const grid=document.createElement('div'); grid.className='opts';
+    q.opts.forEach((o,i)=>{
+      const b=document.createElement('button');
+      b.className='opt'; b.setAttribute('aria-pressed','false');
+      b.innerHTML=`<span class="let">${'ABCD'[i]}</span>${o}`;
+      b.addEventListener('click',()=>{
+        if(EJ.resuelto) return;
+        EJ.sel=i;
+        grid.querySelectorAll('.opt').forEach((x,j)=>x.setAttribute('aria-pressed',String(i===j)));
+      });
+      grid.appendChild(b);
+    });
+    box.appendChild(grid);
+  }else{
+    const wrap=document.createElement('div');
+    wrap.style.cssText='display:flex;align-items:center;gap:10px;flex-wrap:wrap';
+    wrap.innerHTML='<label for="q-in" style="font-weight:600">Respuesta:</label>';
+    const inp=document.createElement('input');
+    inp.type='text'; inp.inputMode='decimal'; inp.className='num-in'; inp.id='q-in'; inp.autocomplete='off';
+    inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();comprobar();}});
+    wrap.appendChild(inp); box.appendChild(wrap);
+  }
+}
+function miniTri(){
+  return `<svg viewBox="0 0 300 170" style="max-width:300px;margin:0 auto">
+    <polygon points="110,20 30,145 270,145" fill="none" stroke="#333B47" stroke-width="2.2"/>
+    <line x1="72" y1="80" x2="190" y2="80" stroke="#C8302B" stroke-width="2.6"/>
+    <circle cx="72" cy="80" r="3.2" fill="#1D2B64"/><circle cx="190" cy="80" r="3.2" fill="#1D2B64"/>
+    <text x="104" y="12" font-size="14" font-weight="600" fill="#1D2B64">A</text>
+    <text x="18" y="158" font-size="14" font-weight="600" fill="#1D2B64">B</text>
+    <text x="276" y="158" font-size="14" font-weight="600" fill="#1D2B64">C</text>
+    <text x="56" y="78" font-size="14" font-weight="600" fill="#1D2B64">D</text>
+    <text x="200" y="78" font-size="14" font-weight="600" fill="#1D2B64">E</text>
+  </svg>`;
+}
+function miniPar(){
+  return `<svg viewBox="0 0 300 180" style="max-width:300px;margin:0 auto">
+    ${[30,95,160].map(y=>`<line x1="15" y1="${y}" x2="285" y2="${y}" stroke="#8A94A6" stroke-width="1.8"/>`).join('')}
+    <line x1="55" y1="18" x2="115" y2="172" stroke="#333B47" stroke-width="2"/>
+    <line x1="240" y1="18" x2="205" y2="172" stroke="#333B47" stroke-width="2"/>
+    <circle cx="60" cy="30" r="3.2" fill="#1D2B64"/><circle cx="85" cy="95" r="3.2" fill="#1D2B64"/><circle cx="111" cy="160" r="3.2" fill="#1D2B64"/>
+    <circle cx="237" cy="30" r="3.2" fill="#1D2B64"/><circle cx="222" cy="95" r="3.2" fill="#1D2B64"/><circle cx="207" cy="160" r="3.2" fill="#1D2B64"/>
+    <text x="46" y="26" font-size="14" font-weight="600" fill="#1D2B64">A</text>
+    <text x="70" y="92" font-size="14" font-weight="600" fill="#1D2B64">B</text>
+    <text x="96" y="172" font-size="14" font-weight="600" fill="#1D2B64">C</text>
+    <text x="247" y="26" font-size="14" font-weight="600" fill="#1D2B64">A'</text>
+    <text x="232" y="92" font-size="14" font-weight="600" fill="#1D2B64">B'</text>
+    <text x="217" y="172" font-size="14" font-weight="600" fill="#1D2B64">C'</text>
+  </svg>`;
+}
+function miniSol(){
+  return `<svg viewBox="0 0 320 150" style="max-width:320px;margin:0 auto">
+    <line x1="10" y1="125" x2="310" y2="125" stroke="#8A94A6" stroke-width="2.2"/>
+    <line x1="70" y1="125" x2="70" y2="35" stroke="#333B47" stroke-width="4.5"/>
+    <line x1="70" y1="125" x2="140" y2="125" stroke="#1D6FD0" stroke-width="4.5"/>
+    <line x1="70" y1="35" x2="140" y2="125" stroke="#B8860B" stroke-width="1.8" stroke-dasharray="5 4"/>
+    <line x1="215" y1="125" x2="215" y2="90" stroke="#333B47" stroke-width="3.5"/>
+    <line x1="215" y1="125" x2="242" y2="125" stroke="#1D6FD0" stroke-width="4.5"/>
+    <line x1="215" y1="90" x2="242" y2="125" stroke="#B8860B" stroke-width="1.8" stroke-dasharray="5 4"/>
+    <text x="58" y="82" font-size="14" font-weight="600" fill="#1D2B64">h</text>
+    <text x="205" y="110" font-size="13" font-weight="600" fill="#1D2B64">vara</text>
+  </svg>`;
+}
+function comprobar(){
+  const q=EJ.q; if(!q||EJ.resuelto) return;
+  let acerto=false, dado='';
+  if(q.kind==='opcion'){
+    if(EJ.sel<0){ $('q-feedback').innerHTML='<div class="note">Elige una opción.</div>'; return; }
+    dado=q.opts[EJ.sel];
+    acerto = dado===q.correcta;
+    const btns=$('q-answer').querySelectorAll('.opt');
+    btns.forEach((b,i)=>{
+      b.disabled=true;
+      if(q.opts[i]===q.correcta) b.classList.add('good');
+      else if(i===EJ.sel) b.classList.add('wrong');
+    });
+  }else{
+    const raw=($('q-in')||{}).value||'';
+    if(raw.trim()===''){ $('q-feedback').innerHTML='<div class="note">Escribe tu respuesta.</div>'; return; }
+    const v=parseFloat(raw.replace(',','.'));
+    dado=raw;
+    acerto = Math.abs(v-q.correcta)<1e-9;
+    const inp=$('q-in'); inp.disabled=true;
+    inp.style.borderColor = acerto ? '#157F4C' : '#C8302B';
+  }
+  EJ.resuelto=true; EJ.tot=(EJ.tot||0);
+  if(acerto) EJ.ok++;
+  $('q-ok').textContent=EJ.ok;
+  $('q-tot').textContent=EJ.n;
+  $('q-bar').style.width=(EJ.ok/Math.max(1,EJ.n)*100)+'%';
+  $('q-check').disabled=true;
+  $('q-feedback').innerHTML = acerto
+    ? `<div class="note ok"><b>¡Correcto!</b> ${q.explica}</div>`
+    : `<div class="note bad"><b>No es correcto.</b> La respuesta es <b>${q.correcta}</b>. ${q.explica}</div>`;
+}
+$('q-check').addEventListener('click',comprobar);
+$('q-next').addEventListener('click',nuevaPregunta);
+$('q-reset').addEventListener('click',()=>{EJ.n=0;EJ.ok=0;$('q-ok').textContent='0';$('q-tot').textContent='0';$('q-bar').style.width='0';nuevaPregunta();});
+document.querySelectorAll('.chip').forEach(c=>{
+  c.addEventListener('click',()=>{
+    document.querySelectorAll('.chip').forEach(x=>x.setAttribute('aria-pressed',String(x===c)));
+    EJ.tipo=c.dataset.tipo; nuevaPregunta();
+  });
+});
+
+/* =====================================================================
+   PESTAÑAS
+   ===================================================================== */
+function showTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected',String(t.dataset.tab===name)));
+  ['congruencia','thales','ejercicios'].forEach(n=>$('tab-'+n).hidden=(n!==name));
+}
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>showTab(t.dataset.tab)));
+
+/* ---------- arranque ---------- */
+drawSuper(0);
+drawCrit('LLL');
+drawAAA();
+drawPar();
+drawTri();
+drawSol();
+nuevaPregunta();
+</script>
+</body>
+</html>
